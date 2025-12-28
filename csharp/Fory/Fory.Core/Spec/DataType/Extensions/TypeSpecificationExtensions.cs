@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Fory.Core.Spec.DataType.Extensions
+﻿namespace Fory.Core.Spec.DataType.Extensions
 {
     internal static class TypeSpecificationExtensions
     {
@@ -36,11 +34,6 @@ namespace Fory.Core.Spec.DataType.Extensions
         internal static string GetNamespace(this IUserDefinedTypeSpecification typeSpec)
         {
             return typeSpec.IsNamespaceIncluded ? typeSpec.AssociatedType.Namespace ?? string.Empty : string.Empty;
-        }
-
-        internal static ReadOnlySpan<byte> GetFieldHeader(this IUserDefinedTypeSpecification typeSpecification)
-        {
-
         }
     }
 }

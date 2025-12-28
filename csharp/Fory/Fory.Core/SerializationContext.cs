@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO.Pipelines;
 using Fory.Core.Spec.DataType;
+using Fory.Core.Spec.Meta;
 
 namespace Fory.Core
 {
@@ -18,10 +19,15 @@ namespace Fory.Core
         public bool ShareMeta => _options.Compatible;
 
         public TypeSpecificationRegistry TypeSpecificationRegistry { get; private set; }
+        public TypeMetaRegistry TypeMetaRegistry { get; private set; }
+        public TypeMetaStringRegistry TypeMetaStringRegistry { get; private set; }
 
         public SerializationContext(ForySerializerOptions options, TypeSpecificationRegistry typeSpecificationRegistry)
         {
             _pipe = new Pipe();
+            TypeMetaRegistry = new TypeMetaRegistry(typeSpecificationRegistry);
+            TypeMetaStringRegistry = new TypeMetaStringRegistry();
+
             _options = options;
             TypeSpecificationRegistry = typeSpecificationRegistry;
         }

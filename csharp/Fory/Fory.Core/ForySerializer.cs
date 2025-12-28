@@ -22,7 +22,7 @@ namespace Fory.Core
             _options = options;
         }
 
-        public bool Register<TObject>()
+        public bool Register(Type type)
         {
             throw new NotImplementedException();
         }

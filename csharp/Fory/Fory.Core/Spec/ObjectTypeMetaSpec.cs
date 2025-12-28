@@ -9,11 +9,6 @@ namespace Fory.Core.Spec
 {
     internal class ObjectTypeMetaSpec : IForySpecDefinition
     {
-        /// <summary>
-        /// Reserved bits of the type id. Represents the fory data type.
-        /// </summary>
-        private const byte KNOWN_TYPE_RESERVED_BITS = 0xff;
-
         public Task Serialize<TValue>(in TValue value, SerializationContext context)
         {
             if (value is null)
@@ -30,26 +25,34 @@ namespace Fory.Core.Spec
                     context.Writer.Advance(1);
                     return Task.CompletedTask;
                 case IEnumTypeSpecification enumTypeMetaSpec:
+                    var enumTypeId = enumTypeMetaSpec.GetTypeId();
+                    WriteForyTypeId(enumTypeId);
 
+                    var enumKnownType = ExtractKnownType(enumTypeId);
+                    if (enumKnownType == TypeSpecificationRegistry.KnownTypes.NamedEnum)
+                    {
+                        if (context.ShareMeta)
+                            WriteTypeMetaIndex(enumTypeMetaSpec);
+                        else
+                            WriteTypeMetaString(enumTypeMetaSpec);
+                    }
                     break;
                 case IStructTypeSpecification structTypeMetaSpec:
                     var structTypeId = structTypeMetaSpec.GetTypeId();
-                    var structTypeIdEncoded = ForyEncoding.AsVarInt32(structTypeId).ToArray();
-                    var structTypeSpan = context.Writer.GetSpan(structTypeIdEncoded.Length);
-                    structTypeIdEncoded.CopyTo(structTypeSpan);
+                    WriteForyTypeId(structTypeId);
 
-                    var knownType = ExtractKnownType(structTypeId);
-                    switch (knownType)
+                    var structKnownType = ExtractKnownType(structTypeId);
+                    switch (structKnownType)
                     {
                         case TypeSpecificationRegistry.KnownTypes.NamedCompatibleStruct:
                         case TypeSpecificationRegistry.KnownTypes.CompatibleStruct:
-
+                            WriteTypeMetaIndex(structTypeMetaSpec);
                             break;
                         case TypeSpecificationRegistry.KnownTypes.NamedStruct:
                             if (context.ShareMeta)
-                            {
-
-                            }
+                                WriteTypeMetaIndex(structTypeMetaSpec);
+                            else
+                                WriteTypeMetaString(structTypeMetaSpec);
                             break;
                     }
 
@@ -57,11 +60,40 @@ namespace Fory.Core.Spec
             }
 
             throw new NotSupportedException("Registered type meta unsupported.");
+
+            void WriteForyTypeId(uint structTypeId)
+            {
+                var buffer = ForyEncoding.AsVarInt32(structTypeId).ToArray();
+                var bufferSpan = context.Writer.GetSpan(buffer.Length);
+                buffer.CopyTo(bufferSpan);
+                context.Writer.Advance(buffer.Length);
+            }
+
+            void WriteTypeMetaIndex<TTypeSpecification>(TTypeSpecification structTypeMetaSpec)
+                where TTypeSpecification : IUserDefinedTypeSpecification
+            {
+                var metaIdx = context.TypeMetaRegistry.TryRegister(structTypeMetaSpec);
+                var metaIdxEncoding = ForyEncoding.AsVarInt32(metaIdx).ToArray();
+                var structSpan = context.Writer.GetSpan(metaIdxEncoding.Length);
+                metaIdxEncoding.CopyTo(structSpan);
+                context.Writer.Advance(metaIdxEncoding.Length);
+            }
+
+            void WriteTypeMetaString<TTypeSpecification>(TTypeSpecification structTypeMetaSpec)
+                where TTypeSpecification : IUserDefinedTypeSpecification
+            {
+                var buffer = context.TypeMetaStringRegistry.TryRegister(structTypeMetaSpec);
+                var span = context.Writer.GetSpan(buffer.Length);
+                buffer.CopyTo(span);
+                context.Writer.Advance(buffer.Length);
+            }
         }
 
         private static TypeSpecificationRegistry.KnownTypes ExtractKnownType(uint typeId)
         {
-            return (TypeSpecificationRegistry.KnownTypes) (typeId & KNOWN_TYPE_RESERVED_BITS);
+            // Reserved bits of the type id. Represents the fory data type.
+            const byte knownTypeReservedBits = 0xff;
+            return (TypeSpecificationRegistry.KnownTypes) (typeId & knownTypeReservedBits);
         }
     }
 }

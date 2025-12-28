@@ -19,6 +19,11 @@ namespace Fory.Core.Spec.DataType
 
         public ITypeSpecification this[Type type] => _registry[type];
 
+        public ITypeSpecification GetTypeSpecification(Type type)
+        {
+            return _registry.TryGetValue(type, out var typeSpec) ? typeSpec : null;
+        }
+
         public void Register<TObject>(uint typeId)
         {
             var typeSpec = Factory.Create<TObject>(typeId);

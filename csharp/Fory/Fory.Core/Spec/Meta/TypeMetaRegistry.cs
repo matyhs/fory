@@ -6,21 +6,28 @@ namespace Fory.Core.Spec.Meta
 {
     internal class TypeMetaRegistry
     {
-        private readonly Dictionary<Type, uint> _registry;
+        private readonly Dictionary<Type, uint> _typeIndexMap;
+        private readonly Queue<byte[]> _typeDefinitions;
+        private readonly TypeSpecificationRegistry _typeSpecificationRegistry;
 
-        internal TypeMetaRegistry()
+        internal TypeMetaRegistry(TypeSpecificationRegistry typeSpecificationRegistry)
         {
-            _registry = new Dictionary<Type, uint>();
+            _typeDefinitions = new Queue<byte[]>();
+            _typeIndexMap = new Dictionary<Type, uint>();
+
+            _typeSpecificationRegistry = typeSpecificationRegistry;
         }
 
         public uint TryRegister(ITypeSpecification typeSpecification)
         {
             var type = typeSpecification.AssociatedType;
-            if (_registry.TryGetValue(type, out var index))
+            if (_typeIndexMap.TryGetValue(type, out var index))
                 return index;
 
-            index = (uint) _registry.Count;
-            _registry.Add(type, index);
+            _typeDefinitions.Enqueue(TypeMetaResolver.Encode(typeSpecification, _typeSpecificationRegistry));
+
+            index = (uint)_typeIndexMap.Count;
+            _typeIndexMap.Add(type, index);
             return index;
         }
     }

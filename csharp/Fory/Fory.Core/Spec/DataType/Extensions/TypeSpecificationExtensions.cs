@@ -31,6 +31,15 @@
             return (typeSpec.TypeId << 8) + (uint)TypeSpecificationRegistry.KnownTypes.Struct;
         }
 
+        internal static uint GetTypeId(this IExtTypeSpecification typeSpec)
+        {
+            var foryKnownType = typeSpec.IsRegisteredByName
+                ? TypeSpecificationRegistry.KnownTypes.NamedExt
+                : TypeSpecificationRegistry.KnownTypes.Ext;
+
+            return (typeSpec.TypeId << 8) + (uint)foryKnownType;
+        }
+
         internal static string GetNamespace(this IUserDefinedTypeSpecification typeSpec)
         {
             return typeSpec.IsNamespaceIncluded ? typeSpec.AssociatedType.Namespace ?? string.Empty : string.Empty;

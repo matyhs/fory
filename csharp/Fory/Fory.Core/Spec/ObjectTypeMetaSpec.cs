@@ -36,7 +36,7 @@ namespace Fory.Core.Spec
                         else
                             WriteTypeMetaString(enumTypeMetaSpec);
                     }
-                    break;
+                    return Task.CompletedTask;
                 case IStructTypeSpecification structTypeMetaSpec:
                     var structTypeId = structTypeMetaSpec.GetTypeId();
                     WriteForyTypeId(structTypeId);
@@ -55,7 +55,19 @@ namespace Fory.Core.Spec
                                 WriteTypeMetaString(structTypeMetaSpec);
                             break;
                     }
+                    return Task.CompletedTask;
+                case IExtTypeSpecification extTypeMetaSpec:
+                    var extTypeId = extTypeMetaSpec.GetTypeId();
+                    WriteForyTypeId(extTypeId);
 
+                    var extKnownType = ExtractKnownType(extTypeId);
+                    if (extKnownType == TypeSpecificationRegistry.KnownTypes.NamedExt)
+                    {
+                        if (context.ShareMeta)
+                            WriteTypeMetaIndex(extTypeMetaSpec);
+                        else
+                            WriteTypeMetaString(extTypeMetaSpec);
+                    }
                     return Task.CompletedTask;
             }
 

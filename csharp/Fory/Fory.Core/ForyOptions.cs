@@ -1,8 +1,8 @@
 ﻿namespace Fory.Core
 {
-    public class ForySerializerOptions
+    public class ForyOptions
     {
-        internal static readonly ForySerializerOptions Default = new ForySerializerOptions();
+        internal static readonly ForyOptions Default = new ForyOptions();
 
         public bool Compatible { get; set; }
 

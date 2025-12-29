@@ -5,10 +5,10 @@ using Fory.Core.Spec.Meta;
 
 namespace Fory.Core
 {
-    internal class SerializationContext
+    public class SerializationContext
     {
         private readonly Pipe _pipe;
-        private readonly ForySerializerOptions _options;
+        private readonly ForyOptions _options;
 
         public PipeWriter Writer => _pipe.Writer;
 
@@ -18,11 +18,11 @@ namespace Fory.Core
 
         public bool ShareMeta => _options.Compatible;
 
-        public TypeSpecificationRegistry TypeSpecificationRegistry { get; private set; }
-        public TypeMetaRegistry TypeMetaRegistry { get; private set; }
-        public TypeMetaStringRegistry TypeMetaStringRegistry { get; private set; }
+        internal TypeSpecificationRegistry TypeSpecificationRegistry { get; private set; }
+        internal TypeMetaRegistry TypeMetaRegistry { get; private set; }
+        internal TypeMetaStringRegistry TypeMetaStringRegistry { get; private set; }
 
-        public SerializationContext(ForySerializerOptions options, TypeSpecificationRegistry typeSpecificationRegistry)
+        internal SerializationContext(ForyOptions options, TypeSpecificationRegistry typeSpecificationRegistry)
         {
             _pipe = new Pipe();
             TypeMetaRegistry = new TypeMetaRegistry(typeSpecificationRegistry);

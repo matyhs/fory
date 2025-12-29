@@ -4,20 +4,20 @@ using Fory.Core.Spec.DataType;
 
 namespace Fory.Core
 {
-    public class ForySerializer
+    public class Fory
     {
         private static readonly IForySpecDefinition _headerSpec = new ForyHeaderSpec();
         private static readonly IForySpecDefinition _refMetaSpec = new ObjectRefMetaSpec();
 
-        private readonly ForySerializerOptions _options;
+        private readonly ForyOptions _options;
         private readonly TypeSpecificationRegistry _typeSpecificationRegistry = new TypeSpecificationRegistry();
 
-        public ForySerializer() : this(ForySerializerOptions.Default)
+        public Fory() : this(ForyOptions.Default)
         {
 
         }
 
-        public ForySerializer(ForySerializerOptions options)
+        public Fory(ForyOptions options)
         {
             _options = options;
         }

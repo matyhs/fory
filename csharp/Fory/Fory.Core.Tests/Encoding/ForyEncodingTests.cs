@@ -18,7 +18,7 @@ public class ForyEncodingTests
     public void Should_Encode_VarInt32(uint input, byte[] output)
     {
         // Act
-        var result = ForyEncoding.AsVarInt32(input).ToArray();
+        var result = ForyEncoding.AsVarUInt32(input).ToArray();
 
         // Assert
         Assert.Equal(output, result);

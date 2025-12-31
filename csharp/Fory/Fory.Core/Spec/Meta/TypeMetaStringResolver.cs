@@ -29,7 +29,7 @@ namespace Fory.Core.Spec.Meta
         private static byte[] EncodeReference(uint index)
         {
             index = ((index + 1) << 1) | 1;
-            return ForyEncoding.AsVarInt32(index).ToArray();
+            return ForyEncoding.AsVarUInt32(index).ToArray();
         }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace Fory.Core.Spec.Meta
         {
             const byte smallStringThreshold = 16;
             var length = metaStringBytes.Bytes.Length;
-            var buffer = ForyEncoding.AsVarInt32((uint) length << 1).ToArray();
+            var buffer = ForyEncoding.AsVarUInt32((uint) length << 1).ToArray();
             var writtenBytes = buffer.Length;
             if (length > smallStringThreshold)
             {

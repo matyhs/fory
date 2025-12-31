@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Buffers;
+using Fory.Core.Serializer;
 using Fory.Core.Spec;
 using Fory.Core.Spec.DataType;
 
@@ -6,8 +8,10 @@ namespace Fory.Core
 {
     public class Fory
     {
-        private static readonly IForySpecDefinition _headerSpec = new ForyHeaderSpec();
-        private static readonly IForySpecDefinition _refMetaSpec = new ObjectRefMetaSpec();
+        private static readonly IForySpecDefinition HeaderSpec = new ForyHeaderSpec();
+        private static readonly IForySpecDefinition RefMetaSpec = new ObjectRefMetaSpec();
+        private static readonly IForySpecDefinition TypeMetaSpec = new ObjectTypeMetaSpec();
+        private static readonly IForySpecDefinition ValueSpec = new ForyValueSpec();
 
         private readonly ForyOptions _options;
         private readonly TypeSpecificationRegistry _typeSpecificationRegistry = new TypeSpecificationRegistry();
@@ -22,18 +26,28 @@ namespace Fory.Core
             _options = options;
         }
 
-        public bool Register(Type type)
+        public bool Register<TObject>()
         {
             throw new NotImplementedException();
         }
 
-        public ReadOnlySpan<byte> Serialize<TValue>(TValue value)
+        public bool RegisterSerializer<TSerializer>() where TSerializer : IForySerializer
+        {
+            throw new NotImplementedException();
+        }
+
+        public ReadOnlySequence<byte> Serialize<TValue>(TValue value)
         {
             var context = new SerializationContext(_options, _typeSpecificationRegistry);
-            _headerSpec.Serialize(value, context);
-            _refMetaSpec.Serialize(value, context);
+            HeaderSpec.Serialize(value, context);
+            RefMetaSpec.Serialize(value, context);
+            TypeMetaSpec.Serialize(value, context);
+            ValueSpec.Serialize(value, context);
 
-            throw new NotImplementedException();
+            context.Writer.Complete();
+            context.Reader.TryRead(out var readResult);
+
+            return readResult.Buffer;
         }
     }
 }

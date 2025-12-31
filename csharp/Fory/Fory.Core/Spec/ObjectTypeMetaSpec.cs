@@ -14,13 +14,12 @@ namespace Fory.Core.Spec
             if (value is null)
                 return Task.CompletedTask;
 
-            var typeMeta = context.TypeSpecificationRegistry[value.GetType()];
-
-            switch (typeMeta)
+            var typeSpec = context.TypeSpecificationRegistry.GetTypeSpecification(value.GetType());
+            switch (typeSpec)
             {
                 case IKnownTypeSpecification knownTypeMetaSpec:
                     var knownTypeSpan = context.Writer.GetSpan(1);
-                    var knownTypeIdEncoded = ForyEncoding.AsVarInt32(knownTypeMetaSpec.GetTypeId()).First();
+                    var knownTypeIdEncoded = ForyEncoding.AsVarUInt32(knownTypeMetaSpec.GetTypeId()).First();
                     knownTypeSpan.Fill(knownTypeIdEncoded);
                     context.Writer.Advance(1);
                     return Task.CompletedTask;
@@ -75,7 +74,7 @@ namespace Fory.Core.Spec
 
             void WriteForyTypeId(uint structTypeId)
             {
-                var buffer = ForyEncoding.AsVarInt32(structTypeId).ToArray();
+                var buffer = ForyEncoding.AsVarUInt32(structTypeId).ToArray();
                 var bufferSpan = context.Writer.GetSpan(buffer.Length);
                 buffer.CopyTo(bufferSpan);
                 context.Writer.Advance(buffer.Length);
@@ -85,7 +84,7 @@ namespace Fory.Core.Spec
                 where TTypeSpecification : IUserDefinedTypeSpecification
             {
                 var metaIdx = context.TypeMetaRegistry.TryRegister(structTypeMetaSpec);
-                var metaIdxEncoding = ForyEncoding.AsVarInt32(metaIdx).ToArray();
+                var metaIdxEncoding = ForyEncoding.AsVarUInt32(metaIdx).ToArray();
                 var structSpan = context.Writer.GetSpan(metaIdxEncoding.Length);
                 metaIdxEncoding.CopyTo(structSpan);
                 context.Writer.Advance(metaIdxEncoding.Length);

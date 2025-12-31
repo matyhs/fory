@@ -5,6 +5,7 @@ using System.Reflection;
 using Fory.Core.Encoding;
 using Fory.Core.HashAlgorithm;
 using Fory.Core.Spec.DataType;
+using Fory.Core.Spec.DataType.Extensions;
 
 namespace Fory.Core.Spec.Meta
 {
@@ -66,7 +67,7 @@ namespace Fory.Core.Spec.Meta
             if (metaFieldSize >= metaFieldMask)
             {
                 var remaining = (uint)(metaFieldSize - metaFieldMask);
-                var remainingBytes = ForyEncoding.AsVarInt32(remaining).ToArray();
+                var remainingBytes = ForyEncoding.AsVarUInt32(remaining).ToArray();
                 remainingBytes.CopyTo(buffer, bufferPosition);
                 writtenByteLength += remainingBytes.Length;
             }
@@ -106,7 +107,7 @@ namespace Fory.Core.Spec.Meta
             if (numFields > smallNumFieldsThreshold)
             {
                 var remaining = (uint)numFields - smallNumFieldsThreshold;
-                var remainingBytes = ForyEncoding.AsVarInt32(remaining).ToArray();
+                var remainingBytes = ForyEncoding.AsVarUInt32(remaining).ToArray();
                 remainingBytes.CopyTo(buffer, bufferPosition);
                 writtenByteLength += remainingBytes.Length;
                 bufferPosition += remainingBytes.Length;
@@ -125,7 +126,7 @@ namespace Fory.Core.Spec.Meta
             }
             else
             {
-                var typeIdBytes = ForyEncoding.AsVarInt32(typeSpecification.TypeId).ToArray();
+                var typeIdBytes = ForyEncoding.AsVarUInt32(typeSpecification.TypeId).ToArray();
                 typeIdBytes.CopyTo(buffer, bufferPosition);
 
                 writtenByteLength += typeIdBytes.Length;
@@ -187,7 +188,7 @@ namespace Fory.Core.Spec.Meta
                 buffer[bufferPosition] = (byte)(bigNameThreshold << 2 | encodingFlag);
                 bufferPosition += 1;
                 var remaining = (uint)encodedNameLength - bigNameThreshold;
-                var encoded = ForyEncoding.AsVarInt32(remaining).ToArray();
+                var encoded = ForyEncoding.AsVarUInt32(remaining).ToArray();
                 encoded.CopyTo(buffer, bufferPosition);
                 bufferPosition += encoded.Length;
                 writtenByteLength += encoded.Length + 1;
@@ -295,7 +296,7 @@ namespace Fory.Core.Spec.Meta
         /// </summary>
         /// <param name="typeSpecRegistry">type specification registry</param>
         /// <param name="type">type info</param>
-        /// <param name="isNestedType">true, if type info is the type of a generic argument</param>
+        /// <param name="isNestedType">true, if type info is the type of generic argument</param>
         /// <param name="nullable">true, if the type can be set to null</param>
         /// <param name="bufferPosition">buffer position</param>
         /// <param name="buffer">buffer</param>
@@ -305,9 +306,6 @@ namespace Fory.Core.Spec.Meta
             bool nullable, int bufferPosition, ref byte[] buffer)
         {
             var typeSpec = typeSpecRegistry.GetTypeSpecification(type);
-            if (typeSpec is null)
-                throw new NotSupportedException($"Type is not registered: {type.FullName}");
-
             var header = typeSpec.TypeId;
             if (isNestedType)
             {
@@ -316,7 +314,7 @@ namespace Fory.Core.Spec.Meta
                     header |= 2;
             }
 
-            var encoded = ForyEncoding.AsVarInt32(header).ToArray();
+            var encoded = ForyEncoding.AsVarUInt32(header).ToArray();
             if (bufferPosition + encoded.Length >= buffer.Length)
                 Array.Resize(ref buffer, buffer.Length * 2);
             encoded.CopyTo(buffer, bufferPosition);

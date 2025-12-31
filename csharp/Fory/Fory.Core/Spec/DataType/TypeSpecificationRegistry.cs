@@ -19,9 +19,9 @@ namespace Fory.Core.Spec.DataType
 
         public ITypeSpecification this[Type type] => _registry[type];
 
-        public ITypeSpecification GetTypeSpecification(Type type)
+        public bool TryGetTypeSpecification(Type type, out ITypeSpecification typeSpec)
         {
-            return _registry.TryGetValue(type, out var typeSpec) ? typeSpec : null;
+            return _registry.TryGetValue(type, out typeSpec);
         }
 
         public void Register<TObject>(uint typeId)

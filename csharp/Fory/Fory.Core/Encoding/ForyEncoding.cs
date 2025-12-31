@@ -5,12 +5,12 @@ namespace Fory.Core.Encoding
     internal static class ForyEncoding
     {
         /// <summary>
-        /// Fory VarInt32, consisting of 1~5 bytes, encodes unsigned integers to fit in a 7-bit grouping per byte. The
+        /// Fory VarUInt32, consisting of 1~5 bytes, encodes unsigned integers to fit in a 7-bit grouping per byte. The
         /// most significant bit (MSB) indicates the existence of another byte.
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static IEnumerable<byte> AsVarInt32(uint value)
+        public static IEnumerable<byte> AsVarUInt32(uint value)
         {
             for (uint i = 0; i < 5; i++)
             {

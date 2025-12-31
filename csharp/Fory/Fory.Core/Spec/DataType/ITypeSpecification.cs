@@ -15,18 +15,28 @@ namespace Fory.Core.Spec.DataType
         Task Serialize(object value, SerializationContext context);
     }
 
+    internal interface ITypeSpecification<in TType> : ITypeSpecification
+    {
+        new Task Serialize(TType value, SerializationContext context);
+    }
+
     /// <summary>
     /// Defines the type specification for system-defined data type
     /// </summary>
-    internal interface IKnownTypeSpecification : ITypeSpecification
+    internal interface IKnownTypeSpecification : ITypeSpecification, ITypeSerializer
     {
         TypeSpecificationRegistry.KnownTypes KnownTypeId { get; }
+    }
+
+    internal interface IKnownTypeSpecification<in TType> : IKnownTypeSpecification, ITypeSpecification<TType>, ITypeSerializer<TType>
+    {
+
     }
 
     /// <summary>
     /// Defines user-defined type specification
     /// </summary>
-    internal interface IUserDefinedTypeSpecification : ITypeSpecification
+    internal interface IUserDefinedTypeSpecification : ITypeSpecification, ITypeSerializer
     {
         bool IsRegisteredByName { get; }
 

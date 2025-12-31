@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Fory.Core.Serializer;
 
 namespace Fory.Core.Spec.DataType
 {
@@ -30,5 +31,6 @@ namespace Fory.Core.Spec.DataType
             throw new NotImplementedException();
         }
 
+        public IForySerializer Serializer { get; }
     }
 }

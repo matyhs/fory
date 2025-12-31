@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Fory.Core.Serializer;
 
 namespace Fory.Core.Spec.DataType
 {
@@ -13,6 +14,7 @@ namespace Fory.Core.Spec.DataType
         public uint TypeId { get; }
         public bool IsRegisteredByName { get; }
         public bool IsNamespaceIncluded { get; }
+        public IForySerializer Serializer => _serializer.Value;
 
         public ExtTypeSpecification(bool includeNamespace) : this()
         {

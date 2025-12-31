@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Fory.Core.Serializer;
 
 namespace Fory.Core.Spec.DataType
 {
@@ -7,12 +8,10 @@ namespace Fory.Core.Spec.DataType
         where TEnum : Enum
     {
         public Type AssociatedType => typeof(TEnum);
-
         public uint TypeId { get; }
-
         public bool IsRegisteredByName { get; }
-
         public bool IsNamespaceIncluded { get; }
+        public IForySerializer Serializer => EnumSerializer.Instance.Value;
 
         public EnumTypeSpecification(bool includeNamespace)
         {
@@ -28,8 +27,8 @@ namespace Fory.Core.Spec.DataType
 
         public Task Serialize(object value, SerializationContext context)
         {
-            throw new NotImplementedException();
+            Serializer.Serialize(value, context);
+            return Task.CompletedTask;
         }
-
     }
 }

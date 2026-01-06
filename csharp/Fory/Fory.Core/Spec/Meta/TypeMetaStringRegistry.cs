@@ -18,7 +18,7 @@ namespace Fory.Core.Spec.Meta
             var isRegistered = TryRegister(metaStringBytes, out var index);
             var namespaceBuffer = TypeMetaStringResolver.Encode(index, isRegistered ? null : metaStringBytes);
 
-            metaStringBytes = GetOrCreate(typeSpecification.AssociatedType.Namespace,
+            metaStringBytes = GetOrCreate(typeSpecification.AssociatedType.Name,
                 TypeNameEncodingFactory.Instance.Value);
             isRegistered = TryRegister(metaStringBytes, out index);
             var typeNameBuffer = TypeMetaStringResolver.Encode(index, isRegistered ? null : metaStringBytes);

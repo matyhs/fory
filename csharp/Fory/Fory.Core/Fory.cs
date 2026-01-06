@@ -1,18 +1,15 @@
 ﻿using System;
 using System.Buffers;
+using System.Threading;
+using System.Threading.Tasks;
 using Fory.Core.Serializer;
-using Fory.Core.Spec;
 using Fory.Core.Spec.DataType;
+using Fory.Core.Spec.DataType.Extensions;
 
 namespace Fory.Core
 {
     public class Fory
     {
-        private static readonly IForySpecDefinition HeaderSpec = new ForyHeaderSpec();
-        private static readonly IForySpecDefinition RefMetaSpec = new ObjectRefMetaSpec();
-        private static readonly IForySpecDefinition TypeMetaSpec = new ObjectTypeMetaSpec();
-        private static readonly IForySpecDefinition ValueSpec = new ForyValueSpec();
-
         private readonly ForyOptions _options;
         private readonly TypeSpecificationRegistry _typeSpecificationRegistry = new TypeSpecificationRegistry();
 
@@ -36,18 +33,28 @@ namespace Fory.Core
             throw new NotImplementedException();
         }
 
-        public ReadOnlySequence<byte> Serialize<TValue>(TValue value)
+        public async ValueTask<ReadOnlySequence<byte>> SerializeAsync<TValue>(TValue value, CancellationToken cancellationToken = default)
         {
             var context = new SerializationContext(_options, _typeSpecificationRegistry);
-            HeaderSpec.Serialize(value, context);
-            RefMetaSpec.Serialize(value, context);
-            TypeMetaSpec.Serialize(value, context);
-            ValueSpec.Serialize(value, context);
+            var typeSpec = _typeSpecificationRegistry.GetTypeSpecification(typeof(TValue));
 
-            context.Writer.Complete();
-            context.Reader.TryRead(out var readResult);
+            await typeSpec.Serializer.SerializeHeaderInfoAsync(value, context, cancellationToken).ConfigureAwait(false);
+            await typeSpec.Serializer.SerializeRefInfoAsync(value, context, cancellationToken).ConfigureAwait(false);
+            await typeSpec.Serializer.SerializeTypeInfoAsync(value, context, cancellationToken).ConfigureAwait(false);
+            await typeSpec.Serializer.SerializeDataAsync(value, context, cancellationToken).ConfigureAwait(false);
 
-            return readResult.Buffer;
+            return await context.CompleteAsync(cancellationToken);
+        }
+
+        public ValueTask<TValue> DeserializeAsync<TValue>(ReadOnlySequence<byte> buffer, CancellationToken cancellationToken = default)
+            where TValue : new()
+        {
+            var context = new DeserializationContext(_options, _typeSpecificationRegistry);
+            context.Initialize(buffer);
+
+            var typeSpec = _typeSpecificationRegistry.GetTypeSpecification(typeof(TValue));
+            typeSpec.Serializer.DeserializeHeaderInfoAsync<TValue>(context, cancellationToken);
+            throw new NotImplementedException();
         }
     }
 }

@@ -1,11 +1,15 @@
-﻿using System;
+﻿using System.Buffers;
 using System.IO.Pipelines;
+using System.Runtime.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
+using Fory.Core.Spec;
 using Fory.Core.Spec.DataType;
 using Fory.Core.Spec.Meta;
 
 namespace Fory.Core
 {
-    public class SerializationContext
+    public sealed class SerializationContext
     {
         private readonly Pipe _pipe;
         private readonly ForyOptions _options;
@@ -32,11 +36,56 @@ namespace Fory.Core
             TypeSpecificationRegistry = typeSpecificationRegistry;
         }
 
-        public void Write()
+        internal async ValueTask<ReadOnlySequence<byte>> CompleteAsync(CancellationToken cancellationToken = default)
         {
-            // TODO: reserve the memory space at construction to reduce GC overhead.
-            var span = _pipe.Writer.GetSpan(10);
-            throw new NotImplementedException();
+            await Writer.CompleteAsync().ConfigureAwait(false);
+            if (Reader.TryRead(out var readResult))
+                return readResult.Buffer;
+
+            throw new SerializationException("Error occurred while accessing buffer data");
+        }
+    }
+
+    public sealed class DeserializationContext
+    {
+        private readonly Pipe _pipe;
+        private readonly ForyOptions _options;
+
+        public PipeReader Reader => _pipe.Reader;
+
+        public bool IsXlang => _options.Xlang;
+
+        public bool ShareMeta => _options.Compatible;
+
+        internal ForyHeaderSpec.ForyConfigFlags HeaderBitmap { get; set; }
+
+        public byte SourceLanguageCode { get; set; }
+
+        internal TypeSpecificationRegistry TypeSpecificationRegistry { get; private set; }
+
+        internal DeserializationContext(ForyOptions options, TypeSpecificationRegistry typeSpecificationRegistry)
+        {
+            _pipe = new Pipe();
+
+            _options = options;
+            TypeSpecificationRegistry = typeSpecificationRegistry;
+        }
+
+        internal void Initialize(ReadOnlySequence<byte> buffer)
+        {
+            if (buffer.IsSingleSegment)
+            {
+                _pipe.Writer.Write(buffer.First.Span);
+            }
+            else
+            {
+                foreach (var segment in buffer)
+                {
+                    _pipe.Writer.Write(segment.Span);
+                }
+            }
+
+            _pipe.Writer.Complete();
         }
     }
 }

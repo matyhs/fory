@@ -1,17 +1,20 @@
 ﻿using System;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 using Fory.Core.Encoding;
 
 namespace Fory.Core.Serializer
 {
-    public sealed class EnumSerializer : IForySerializer
+    internal sealed class EnumSerializer : ForySerializerBase
     {
-        internal static readonly Lazy<IForySerializer> Instance = new Lazy<IForySerializer>(() => new EnumSerializer());
+        internal static readonly Lazy<IForySerializer> Instance = new(() => new EnumSerializer());
 
-        public Type AssociatedType => typeof(Enum);
+        public override Type AssociatedType => typeof(Enum);
 
-        public void Serialize<TValue>(TValue value, SerializationContext context)
+        public override async Task SerializeDataAsync<TValue>(TValue value, SerializationContext context,
+            CancellationToken cancellationToken = default)
         {
             if (!value.GetType().IsEnum)
             {
@@ -23,6 +26,8 @@ namespace Fory.Core.Serializer
             var span = context.Writer.GetSpan(converted.Length);
             converted.CopyTo(span);
             context.Writer.Advance(converted.Length);
+
+            await context.Writer.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
         private static uint GetUnderlyingValueAsUInt32<TValue>(TValue value)

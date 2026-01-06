@@ -2,9 +2,9 @@
 
 namespace Fory.Core.Spec
 {
-    internal class ObjectRefMetaSpec : IForySpecDefinition
+    public static class ForyRefMetaSpec
     {
-        private enum ReferenceFlag : sbyte
+        public enum ReferenceFlag : sbyte
         {
             // This flag indicates the object is a null value. We don't use another byte to indicate REF, so that we can save one byte.
             Null = -3,
@@ -14,17 +14,6 @@ namespace Fory.Core.Spec
             NotNull = -1,
             // This flag indicates the object is referencable and the first time to serialize.
             RefValue = 0
-        }
-
-        public Task Serialize<TValue>(in TValue value, SerializationContext context)
-        {
-            var refFlag = value is null ? ReferenceFlag.Null : ReferenceFlag.NotNull;
-
-            var span = context.Writer.GetSpan(1);
-            span.Fill((byte)(sbyte)refFlag);
-            context.Writer.Advance(1);
-
-            return Task.CompletedTask;
         }
     }
 }

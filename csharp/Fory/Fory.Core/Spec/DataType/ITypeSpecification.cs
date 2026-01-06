@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Fory.Core.Serializer;
 
 namespace Fory.Core.Spec.DataType
 {
@@ -12,23 +13,23 @@ namespace Fory.Core.Spec.DataType
 
         uint TypeId { get; }
 
-        Task Serialize(object value, SerializationContext context);
+        IForySerializer Serializer { get; }
     }
 
     internal interface ITypeSpecification<in TType> : ITypeSpecification
     {
-        new Task Serialize(TType value, SerializationContext context);
+        new IForySerializer<TType> Serializer { get; }
     }
 
     /// <summary>
     /// Defines the type specification for system-defined data type
     /// </summary>
-    internal interface IKnownTypeSpecification : ITypeSpecification, ITypeSerializer
+    internal interface IKnownTypeSpecification : ITypeSpecification
     {
         TypeSpecificationRegistry.KnownTypes KnownTypeId { get; }
     }
 
-    internal interface IKnownTypeSpecification<in TType> : IKnownTypeSpecification, ITypeSpecification<TType>, ITypeSerializer<TType>
+    internal interface IKnownTypeSpecification<in TType> : IKnownTypeSpecification, ITypeSpecification<TType>
     {
 
     }
@@ -36,7 +37,7 @@ namespace Fory.Core.Spec.DataType
     /// <summary>
     /// Defines user-defined type specification
     /// </summary>
-    internal interface IUserDefinedTypeSpecification : ITypeSpecification, ITypeSerializer
+    internal interface IUserDefinedTypeSpecification : ITypeSpecification
     {
         bool IsRegisteredByName { get; }
 

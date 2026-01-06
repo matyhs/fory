@@ -13,7 +13,7 @@ namespace Fory.Core.Spec.Meta
         /// <param name="index"></param>
         /// <param name="metaStringBytes"></param>
         /// <returns></returns>
-        public static byte[] Encode(uint index, MetaStringBytes metaStringBytes)
+        public static byte[] Encode(uint index, MetaStringBytes? metaStringBytes)
         {
             if (metaStringBytes is null)
                 return EncodeReference(index);

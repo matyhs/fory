@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Fory.Core.Serializer;
 
 namespace Fory.Core.Spec.DataType
@@ -23,12 +22,6 @@ namespace Fory.Core.Spec.DataType
         {
             TypeId = typeId;
             IsRegisteredByName = false;
-        }
-
-        public Task Serialize(object value, SerializationContext context)
-        {
-            Serializer.Serialize(value, context);
-            return Task.CompletedTask;
         }
     }
 }

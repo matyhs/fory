@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Fory.Core.Serializer;
 
 namespace Fory.Core.Spec.DataType
@@ -31,12 +30,6 @@ namespace Fory.Core.Spec.DataType
         private ExtTypeSpecification()
         {
             _serializer = new Lazy<TSerializer>(() => new TSerializer());
-        }
-
-        public Task Serialize(object value, SerializationContext context)
-        {
-            _serializer.Value.Serialize(value, context);
-            return Task.CompletedTask;
         }
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Fory.Core.Spec
 {
-    public static class ForyRefMetaSpec
+    internal static class ForyRefMetaSpec
     {
         public enum ReferenceFlag : sbyte
         {
@@ -14,6 +14,22 @@ namespace Fory.Core.Spec
             NotNull = -1,
             // This flag indicates the object is referencable and the first time to serialize.
             RefValue = 0
+        }
+    }
+
+    public readonly struct ReferenceInfo
+    {
+        private readonly ForyRefMetaSpec.ReferenceFlag _bitmap;
+
+        public bool IsNull => _bitmap == ForyRefMetaSpec.ReferenceFlag.Null;
+
+        public bool IsNewReference => _bitmap == ForyRefMetaSpec.ReferenceFlag.RefValue;
+
+        public bool HasReference => _bitmap == ForyRefMetaSpec.ReferenceFlag.Ref;
+
+        internal ReferenceInfo(ForyRefMetaSpec.ReferenceFlag bitmap)
+        {
+            _bitmap = bitmap;
         }
     }
 }

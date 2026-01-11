@@ -16,4 +16,27 @@ namespace Fory.Core.Spec
             IsOob = 1 << 3
         }
     }
+
+    public readonly record struct HeaderInfo
+    {
+        private readonly ForyHeaderSpec.ForyConfigFlags _bitmap;
+
+        public byte? SourceLanguageCode { get; }
+
+        public bool IsPeerXlang => _bitmap.HasFlag(ForyHeaderSpec.ForyConfigFlags.IsXlang);
+
+        public bool IsPeerLittleEdian => _bitmap.HasFlag(ForyHeaderSpec.ForyConfigFlags.IsLittleEdian);
+
+        public bool IsNull => _bitmap.HasFlag(ForyHeaderSpec.ForyConfigFlags.IsNull);
+
+        internal HeaderInfo(ForyHeaderSpec.ForyConfigFlags bitmap)
+        {
+            _bitmap = bitmap;
+        }
+
+        internal HeaderInfo(ForyHeaderSpec.ForyConfigFlags bitmap, byte languageCode) : this(bitmap)
+        {
+            SourceLanguageCode = languageCode;
+        }
+    }
 }

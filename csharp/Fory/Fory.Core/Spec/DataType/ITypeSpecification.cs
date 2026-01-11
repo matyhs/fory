@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Fory.Core.Serializer;
 
 namespace Fory.Core.Spec.DataType
@@ -16,7 +15,7 @@ namespace Fory.Core.Spec.DataType
         IForySerializer Serializer { get; }
     }
 
-    internal interface ITypeSpecification<in TType> : ITypeSpecification
+    internal interface ITypeSpecification<TType> : ITypeSpecification
     {
         new IForySerializer<TType> Serializer { get; }
     }
@@ -29,7 +28,7 @@ namespace Fory.Core.Spec.DataType
         TypeSpecificationRegistry.KnownTypes KnownTypeId { get; }
     }
 
-    internal interface IKnownTypeSpecification<in TType> : IKnownTypeSpecification, ITypeSpecification<TType>
+    internal interface IKnownTypeSpecification<TType> : IKnownTypeSpecification, ITypeSpecification<TType>
     {
 
     }

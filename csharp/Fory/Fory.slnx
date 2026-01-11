@@ -1,4 +1,4 @@
 <Solution>
-  <Project Path="Fory.Core.Tests/Fory.Core.Tests.csproj" />
-  <Project Path="Fory.Core/Fory.Core.csproj" />
+    <Project Path="Fory.Core.Tests/Fory.Core.Tests.csproj"/>
+    <Project Path="Fory.Core/Fory.Core.csproj"/>
 </Solution>

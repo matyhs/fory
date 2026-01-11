@@ -19,9 +19,9 @@ public class MurmurHash3AlgorithmTests
     [InlineData("123456789ab", new ulong[] { 6978636991469537545, 12243090730442643750 })]
     [InlineData("123456789abc", new ulong[] { 211890993682310078, 16480638721813329343 })]
     [InlineData("123456789abcd", new ulong[] { 12459781455342427559, 3193214493011213179 })]
-    [InlineData("123456789abcde", new ulong[] { 12538342858731408721, 9820739847336455216 })]
+    [InlineData("123456789abcde", new[] { 12538342858731408721, 9820739847336455216 })]
     [InlineData("123456789abcdef", new ulong[] { 9165946068217512774, 2451472574052603025 })]
-    [InlineData("123456789abcdef1", new ulong[] { 9259082041050667785, 12459473952842597282 })]
+    [InlineData("123456789abcdef1", new[] { 9259082041050667785, 12459473952842597282 })]
     public void Should_ComputeHash(string value, ulong[] hash)
     {
         // Arrange

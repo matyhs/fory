@@ -8,7 +8,7 @@ public class ForyTests
     public async Task Should_Serialize_Deserialize_Boolean(bool value)
     {
         // Arrange
-        var fory = new Fory(new ForyOptions() { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);

@@ -3,85 +3,77 @@ using System.IO.Pipelines;
 using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using Fory.Core.Spec;
 using Fory.Core.Spec.DataType;
 using Fory.Core.Spec.Meta;
 
-namespace Fory.Core
+namespace Fory.Core;
+
+public sealed class SerializationContext
 {
-    public sealed class SerializationContext
+    private readonly ForyOptions _options;
+    private readonly Pipe _pipe;
+
+    internal SerializationContext(ForyOptions options, TypeSpecificationRegistry typeSpecificationRegistry)
     {
-        private readonly Pipe _pipe;
-        private readonly ForyOptions _options;
+        _pipe = new Pipe();
+        TypeMetaRegistry = new TypeMetaRegistry(typeSpecificationRegistry);
+        TypeMetaStringRegistry = new TypeMetaStringRegistry();
 
-        public PipeWriter Writer => _pipe.Writer;
-
-        public PipeReader Reader => _pipe.Reader;
-
-        public bool IsXlang => _options.Xlang;
-
-        public bool ShareMeta => _options.Compatible;
-
-        internal TypeSpecificationRegistry TypeSpecificationRegistry { get; private set; }
-        internal TypeMetaRegistry TypeMetaRegistry { get; private set; }
-        internal TypeMetaStringRegistry TypeMetaStringRegistry { get; private set; }
-
-        internal SerializationContext(ForyOptions options, TypeSpecificationRegistry typeSpecificationRegistry)
-        {
-            _pipe = new Pipe();
-            TypeMetaRegistry = new TypeMetaRegistry(typeSpecificationRegistry);
-            TypeMetaStringRegistry = new TypeMetaStringRegistry();
-
-            _options = options;
-            TypeSpecificationRegistry = typeSpecificationRegistry;
-        }
-
-        internal async ValueTask<ReadOnlySequence<byte>> CompleteAsync(CancellationToken cancellationToken = default)
-        {
-            await Writer.CompleteAsync().ConfigureAwait(false);
-            if (Reader.TryRead(out var readResult))
-                return readResult.Buffer;
-
-            throw new SerializationException("Error occurred while accessing buffer data");
-        }
+        _options = options;
+        TypeSpecificationRegistry = typeSpecificationRegistry;
     }
 
-    public sealed class DeserializationContext
+    public PipeWriter Writer => _pipe.Writer;
+
+    public PipeReader Reader => _pipe.Reader;
+
+    public bool IsXlang => _options.Xlang;
+
+    public bool ShareMeta => _options.Compatible;
+
+    internal TypeSpecificationRegistry TypeSpecificationRegistry { get; private set; }
+    internal TypeMetaRegistry TypeMetaRegistry { get; private set; }
+    internal TypeMetaStringRegistry TypeMetaStringRegistry { get; private set; }
+
+    internal async ValueTask<ReadOnlySequence<byte>> CompleteAsync(CancellationToken cancellationToken = default)
     {
-        private readonly Pipe _pipe;
-        private readonly ForyOptions _options;
+        await Writer.CompleteAsync().ConfigureAwait(false);
+        if (Reader.TryRead(out var readResult))
+            return readResult.Buffer;
 
-        public PipeReader Reader => _pipe.Reader;
+        throw new SerializationException("Error occurred while accessing buffer data");
+    }
+}
 
-        public bool IsXlang => _options.Xlang;
+public sealed class DeserializationContext
+{
+    private readonly ForyOptions _options;
+    private readonly Pipe _pipe;
 
-        public bool ShareMeta => _options.Compatible;
+    internal DeserializationContext(ForyOptions options, TypeSpecificationRegistry typeSpecificationRegistry)
+    {
+        _pipe = new Pipe();
 
-        internal TypeSpecificationRegistry TypeSpecificationRegistry { get; private set; }
+        _options = options;
+        TypeSpecificationRegistry = typeSpecificationRegistry;
+    }
 
-        internal DeserializationContext(ForyOptions options, TypeSpecificationRegistry typeSpecificationRegistry)
-        {
-            _pipe = new Pipe();
+    public PipeReader Reader => _pipe.Reader;
 
-            _options = options;
-            TypeSpecificationRegistry = typeSpecificationRegistry;
-        }
+    public bool IsXlang => _options.Xlang;
 
-        internal void Initialize(ReadOnlySequence<byte> buffer)
-        {
-            if (buffer.IsSingleSegment)
-            {
-                _pipe.Writer.Write(buffer.First.Span);
-            }
-            else
-            {
-                foreach (var segment in buffer)
-                {
-                    _pipe.Writer.Write(segment.Span);
-                }
-            }
+    public bool ShareMeta => _options.Compatible;
 
-            _pipe.Writer.Complete();
-        }
+    internal TypeSpecificationRegistry TypeSpecificationRegistry { get; private set; }
+
+    internal void Initialize(ReadOnlySequence<byte> buffer)
+    {
+        if (buffer.IsSingleSegment)
+            _pipe.Writer.Write(buffer.First.Span);
+        else
+            foreach (var segment in buffer)
+                _pipe.Writer.Write(segment.Span);
+
+        _pipe.Writer.Complete();
     }
 }

@@ -1,7 +1,5 @@
-﻿namespace Fory.Core.Spec.Meta
-{
-    public class TypeMeta
-    {
+﻿namespace Fory.Core.Spec.Meta;
 
-    }
+public class TypeMeta
+{
 }

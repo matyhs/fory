@@ -1,7 +1,5 @@
-﻿namespace Fory.Core
-{
-    public interface IForySerializable
-    {
+﻿namespace Fory.Core;
 
-    }
+public interface IForySerializable
+{
 }

@@ -20,7 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Fory.Core\Fory.Core.csproj" />
+        <ProjectReference Include="..\Fory.Core\Fory.Core.csproj"/>
     </ItemGroup>
 
 </Project>

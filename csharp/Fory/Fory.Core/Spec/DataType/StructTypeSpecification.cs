@@ -2,35 +2,34 @@
 using System.Threading.Tasks;
 using Fory.Core.Serializer;
 
-namespace Fory.Core.Spec.DataType
+namespace Fory.Core.Spec.DataType;
+
+internal class StructTypeSpecification<TObject> : IStructTypeSpecification
 {
-    internal class StructTypeSpecification<TObject> : IStructTypeSpecification
+    public StructTypeSpecification(bool includeNamespace)
     {
-        public Type AssociatedType => typeof(TObject);
+        IsRegisteredByName = true;
+        IsNamespaceIncluded = includeNamespace;
+    }
 
-        public uint TypeId { get; }
+    public StructTypeSpecification(uint typeId)
+    {
+        TypeId = typeId;
+        IsRegisteredByName = false;
+    }
 
-        public bool IsRegisteredByName { get; }
+    public Type AssociatedType => typeof(TObject);
 
-        public bool IsNamespaceIncluded { get; }
+    public uint TypeId { get; }
 
-        public StructTypeSpecification(bool includeNamespace)
-        {
-            IsRegisteredByName = true;
-            IsNamespaceIncluded = includeNamespace;
-        }
+    public bool IsRegisteredByName { get; }
 
-        public StructTypeSpecification(uint typeId)
-        {
-            TypeId = typeId;
-            IsRegisteredByName = false;
-        }
+    public bool IsNamespaceIncluded { get; }
 
-        public Task Serialize(object value, SerializationContext context)
-        {
-            throw new NotImplementedException();
-        }
+    public IForySerializer Serializer { get; }
 
-        public IForySerializer Serializer { get; }
+    public Task Serialize(object value, SerializationContext context)
+    {
+        throw new NotImplementedException();
     }
 }

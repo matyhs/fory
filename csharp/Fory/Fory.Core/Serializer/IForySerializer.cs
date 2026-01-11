@@ -7,7 +7,6 @@ using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Fory.Core.Encoding;
-using Fory.Core.Extensions;
 using Fory.Core.Spec;
 using Fory.Core.Spec.DataType;
 using Fory.Core.Spec.DataType.Extensions;
@@ -19,6 +18,9 @@ namespace Fory.Core.Serializer
         public abstract Type AssociatedType { get; }
 
         public abstract Task SerializeDataAsync<TValue>(TValue value, SerializationContext context,
+            CancellationToken cancellationToken = default);
+
+        public abstract ValueTask<object?> DeserializeDataAsync<TValue>(DeserializationContext context,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -36,6 +38,7 @@ namespace Fory.Core.Serializer
             {
                 BinaryPrimitives.WriteUInt16LittleEndian(span, ForyHeaderSpec.MagicNumber);
             }
+
             context.Writer.Advance(sizeof(ushort));
 
             span = context.Writer.GetSpan(sizeof(byte));
@@ -56,7 +59,8 @@ namespace Fory.Core.Serializer
         public async Task SerializeRefInfoAsync<TValue>(TValue value, SerializationContext context,
             CancellationToken cancellationToken = default)
         {
-            var refFlag = (byte)(value is null ? ForyRefMetaSpec.ReferenceFlag.Null : ForyRefMetaSpec.ReferenceFlag.NotNull);
+            var refFlag =
+                (byte)(value is null ? ForyRefMetaSpec.ReferenceFlag.Null : ForyRefMetaSpec.ReferenceFlag.NotNull);
 
             var span = context.Writer.GetSpan(sizeof(byte));
             MemoryMarshal.Write(span, ref refFlag);
@@ -163,48 +167,40 @@ namespace Fory.Core.Serializer
                 buffer.CopyTo(span);
                 context.Writer.Advance(buffer.Length);
             }
-
-            static TypeSpecificationRegistry.KnownTypes ExtractKnownType(uint typeId)
-            {
-                // Reserved bits of the type id. Represents the fory data type.
-                const byte knownTypeReservedBits = 0xff;
-                return (TypeSpecificationRegistry.KnownTypes) (typeId & knownTypeReservedBits);
-            }
         }
 
-        public Task DeserializeHeaderInfoAsync<TValue>(DeserializationContext context, CancellationToken cancellationToken = default)
+        public async ValueTask<HeaderInfo> DeserializeHeaderInfoAsync<TValue>(DeserializationContext context,
+            CancellationToken cancellationToken = default)
         {
-            if (!ValidateMagicNumber(context))
-                throw new SerializationException($"Fory xlang serialization must start with magic number {ForyHeaderSpec.MagicNumber}.");
+            var validMagicNumber = await ValidateMagicNumber(context, cancellationToken).ConfigureAwait(false);
+            if (!validMagicNumber)
+                throw new SerializationException(
+                    $"Fory xlang serialization must start with magic number {ForyHeaderSpec.MagicNumber}.");
 
-            context.Reader.TryRead(out var readResult);
+            var readResult = await context.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
             var sequence = readResult.Buffer.Slice(0, sizeof(byte));
-            context.HeaderBitmap = MemoryMarshal.Read<ForyHeaderSpec.ForyConfigFlags>(sequence.First.Span);
+            var bitmap = MemoryMarshal.Read<ForyHeaderSpec.ForyConfigFlags>(sequence.First.Span);
             context.Reader.AdvanceTo(sequence.End);
 
-            var isPeerXlang = context.IsPeerXlang();
-            if (isPeerXlang != context.IsXlang)
-                throw new SerializationException("Mismatch found in header bitmap between xlang bit and current Fory configuration.");
-
-            if (!context.IsPeerLittleEdian())
-                throw new SerializationException("Big endian is currently not supported");
-
-            if (isPeerXlang)
+            if (bitmap.HasFlag(ForyHeaderSpec.ForyConfigFlags.IsXlang))
             {
-                context.Reader.TryRead(out readResult);
+                readResult = await context.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
                 sequence = readResult.Buffer.Slice(0, sizeof(byte));
-                context.SourceLanguageCode = MemoryMarshal.Read<byte>(sequence.First.Span);
+                var sourceLanguageCode = MemoryMarshal.Read<byte>(sequence.First.Span);
                 context.Reader.AdvanceTo(sequence.End);
+
+                return new HeaderInfo(bitmap, sourceLanguageCode);
             }
 
-            return Task.CompletedTask;
+            return new HeaderInfo(bitmap);
 
-            static bool ValidateMagicNumber(DeserializationContext context)
+            static async ValueTask<bool> ValidateMagicNumber(DeserializationContext context,
+                CancellationToken cancellationToken)
             {
                 if (!context.IsXlang)
                     return true;
 
-                context.Reader.TryRead(out var readResult);
+                var readResult = await context.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
                 var sequence = readResult.Buffer.Slice(0, sizeof(ushort));
 
                 var pool = ArrayPool<byte>.Shared;
@@ -221,6 +217,46 @@ namespace Fory.Core.Serializer
                 return magicNumber == ForyHeaderSpec.MagicNumber;
             }
         }
+
+        public async ValueTask<ReferenceInfo> DeserializeRefInfoAsync<TValue>(DeserializationContext context,
+            CancellationToken cancellationToken = default)
+        {
+            var readResult = await context.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            var sequence = readResult.Buffer.Slice(0, sizeof(byte));
+            var bitmap = MemoryMarshal.Read<ForyRefMetaSpec.ReferenceFlag>(sequence.First.Span);
+            context.Reader.AdvanceTo(sequence.End);
+
+            return new ReferenceInfo(bitmap);
+        }
+
+        public async ValueTask<TypeInfo<TValue>> DeserializeTypeInfoAsync<TValue>(DeserializationContext context,
+            CancellationToken cancellationToken = default)
+        {
+            var foryTypeId = await ForyEncoding.FromVarUInt32Async(context.Reader, cancellationToken)
+                .ConfigureAwait(false);
+
+            switch (ExtractKnownType(foryTypeId))
+            {
+                case TypeSpecificationRegistry.KnownTypes.NamedCompatibleStruct
+                    or TypeSpecificationRegistry.KnownTypes.CompatibleStruct:
+
+                    break;
+                case TypeSpecificationRegistry.KnownTypes.NamedStruct
+                    or TypeSpecificationRegistry.KnownTypes.NamedEnum
+                    or TypeSpecificationRegistry.KnownTypes.NamedExt:
+                    break;
+            }
+
+            context.TypeSpecificationRegistry.TryGetTypeSpecification(foryTypeId, out var typeSpec);
+            return new TypeInfo<TValue>(typeSpec);
+        }
+
+        private static TypeSpecificationRegistry.KnownTypes ExtractKnownType(uint typeId)
+        {
+            // Reserved bits of the type id. Represents the fory data type.
+            const byte knownTypeReservedBits = 0xff;
+            return (TypeSpecificationRegistry.KnownTypes)(typeId & knownTypeReservedBits);
+        }
     }
 
     public abstract class ForySerializerBase<TValue> : ForySerializerBase, IForySerializer<TValue>
@@ -230,7 +266,11 @@ namespace Fory.Core.Serializer
         public abstract Task SerializeDataAsync(TValue value, SerializationContext context,
             CancellationToken cancellationToken = default);
 
-        public override Task SerializeDataAsync<TScopedValue>(TScopedValue value, SerializationContext context, CancellationToken cancellationToken = default)
+        public abstract ValueTask<TValue> DeserializeDataAsync(DeserializationContext context,
+            CancellationToken cancellationToken = default);
+
+        public override Task SerializeDataAsync<TScopedValue>(TScopedValue value, SerializationContext context,
+            CancellationToken cancellationToken = default)
         {
             if (value is TValue casted)
             {
@@ -239,11 +279,25 @@ namespace Fory.Core.Serializer
 
             throw new SerializationException($"Unable to serialize {value} using {GetType().Name} serializer");
         }
+
+        public override async ValueTask<object?> DeserializeDataAsync<TScopedValue>(DeserializationContext context, CancellationToken cancellationToken = default)
+        {
+            if (typeof(TScopedValue) == AssociatedType)
+            {
+                var value = await DeserializeDataAsync(context, cancellationToken);
+                return value;
+            }
+
+            throw new SerializationException($"Unable to serialize using {GetType().Name} serializer");
+        }
     }
 
-    public interface IForySerializer<in TValue> : IForySerializer
+    public interface IForySerializer<TValue> : IForySerializer
     {
         Task SerializeDataAsync(TValue value, SerializationContext context,
+            CancellationToken cancellationToken = default);
+
+        ValueTask<TValue> DeserializeDataAsync(DeserializationContext context,
             CancellationToken cancellationToken = default);
     }
 
@@ -263,7 +317,16 @@ namespace Fory.Core.Serializer
         Task SerializeDataAsync<TValue>(TValue value, SerializationContext context,
             CancellationToken cancellationToken = default);
 
-        Task DeserializeHeaderInfoAsync<TValue>(DeserializationContext context,
+        ValueTask<HeaderInfo> DeserializeHeaderInfoAsync<TValue>(DeserializationContext context,
+            CancellationToken cancellationToken = default);
+
+        ValueTask<ReferenceInfo> DeserializeRefInfoAsync<TValue>(DeserializationContext context,
+            CancellationToken cancellationToken = default);
+
+        ValueTask<TypeInfo<TValue>> DeserializeTypeInfoAsync<TValue>(DeserializationContext context,
+            CancellationToken cancellationToken = default);
+
+        ValueTask<object?> DeserializeDataAsync<TValue>(DeserializationContext context,
             CancellationToken cancellationToken = default);
     }
 }

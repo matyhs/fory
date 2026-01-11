@@ -15,5 +15,15 @@ namespace Fory.Core.Serializer
 
             await context.Writer.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
+
+        public override async ValueTask<bool> DeserializeDataAsync(DeserializationContext context, CancellationToken cancellationToken = default)
+        {
+            var readResult = await context.Reader.ReadAsync(cancellationToken);
+            var sequence = readResult.Buffer.Slice(0, sizeof(byte));
+            var value = MemoryMarshal.Read<bool>(sequence.First.Span);
+            context.Reader.AdvanceTo(sequence.End);
+
+            return value;
+        }
     }
 }

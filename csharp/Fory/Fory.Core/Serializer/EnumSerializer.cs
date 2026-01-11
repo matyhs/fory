@@ -30,6 +30,11 @@ namespace Fory.Core.Serializer
             await context.Writer.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
+        public override ValueTask<object?> DeserializeDataAsync<TValue>(DeserializationContext context, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
         private static uint GetUnderlyingValueAsUInt32<TValue>(TValue value)
         {
             switch (value)

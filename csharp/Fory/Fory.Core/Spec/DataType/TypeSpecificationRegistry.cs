@@ -8,20 +8,27 @@ namespace Fory.Core.Spec.DataType
     {
         private static readonly TypeSpecificationFactory Factory = new TypeSpecificationFactory();
 
-        private readonly Dictionary<Type, ITypeSpecification> _registry;
+        private readonly Dictionary<Type, ITypeSpecification> _registryByType;
+        private readonly Dictionary<uint, ITypeSpecification> _registryByTypeId;
 
         internal TypeSpecificationRegistry()
         {
-            _registry = new Dictionary<Type, ITypeSpecification>();
+            _registryByType = new Dictionary<Type, ITypeSpecification>();
+            _registryByTypeId = new Dictionary<uint, ITypeSpecification>();
 
             RegisterInternal<BooleanTypeSpecification>();
         }
 
-        public ITypeSpecification this[Type type] => _registry[type];
+        public ITypeSpecification this[Type type] => _registryByType[type];
 
         public bool TryGetTypeSpecification(Type type, out ITypeSpecification typeSpec)
         {
-            return _registry.TryGetValue(type, out typeSpec);
+            return _registryByType.TryGetValue(type, out typeSpec);
+        }
+
+        public bool TryGetTypeSpecification(uint typeId, out ITypeSpecification typeSpec)
+        {
+            return _registryByTypeId.TryGetValue(typeId, out typeSpec);
         }
 
         public void Register<TObject>(uint typeId)
@@ -44,7 +51,8 @@ namespace Fory.Core.Spec.DataType
 
         private void RegisterInternal(ITypeSpecification typeMetaSpec)
         {
-            _registry.Add(typeMetaSpec.AssociatedType, typeMetaSpec);
+            _registryByType.Add(typeMetaSpec.AssociatedType, typeMetaSpec);
+            _registryByTypeId.Add(typeMetaSpec.TypeId, typeMetaSpec);
         }
 
         private class TypeSpecificationFactory
@@ -87,7 +95,7 @@ namespace Fory.Core.Spec.DataType
 
             private static ITypeSpecification CreateInternal(Type typeSpecType, uint typeId)
             {
-                var constructor = typeSpecType.GetConstructor(new[] { typeof(uint) });
+                var constructor = typeSpecType.GetConstructor([typeof(uint)]);
                 if (constructor is null)
                     throw new ArgumentNullException(nameof(constructor));
 
@@ -98,7 +106,7 @@ namespace Fory.Core.Spec.DataType
 
             private static ITypeSpecification CreateInternal(Type typeSpecType, bool includeNamespace)
             {
-                var constructor = typeSpecType.GetConstructor(new[] { typeof(bool) });
+                var constructor = typeSpecType.GetConstructor([typeof(bool)]);
                 if (constructor is null)
                     throw new ArgumentNullException(nameof(constructor));
 

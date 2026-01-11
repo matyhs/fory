@@ -57,10 +57,6 @@ namespace Fory.Core
 
         public bool ShareMeta => _options.Compatible;
 
-        internal ForyHeaderSpec.ForyConfigFlags HeaderBitmap { get; set; }
-
-        public byte SourceLanguageCode { get; set; }
-
         internal TypeSpecificationRegistry TypeSpecificationRegistry { get; private set; }
 
         internal DeserializationContext(ForyOptions options, TypeSpecificationRegistry typeSpecificationRegistry)

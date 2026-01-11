@@ -12,8 +12,9 @@ public class ForyTests
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
-        var result = await fory.DeserializeAsync<bool>(bufferResult);
+        var actual = await fory.DeserializeAsync<bool>(bufferResult);
 
         // Assert
+        Assert.Equal(value, actual);
     }
 }

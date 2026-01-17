@@ -14,10 +14,13 @@ internal static class TypeSpecificationRegistryExtensions
     /// <exception cref="NotSupportedException">thrown when type is not registered</exception>
     public static ITypeSpecification GetTypeSpecification(this TypeSpecificationRegistry registry, Type type)
     {
+        var exception = new NotSupportedException($"Type is not registered: {type.FullName}");
         return registry.TryGetTypeSpecification(type, out var typeSpec)
             ? typeSpec
-            : registry.TryGetTypeSpecification(type.GetGenericTypeDefinition(), out typeSpec)
-                ? typeSpec
-                : throw new NotSupportedException($"Type is not registered: {type.FullName}");
+            : type.ContainsGenericParameters
+                ? registry.TryGetTypeSpecification(type.GetGenericTypeDefinition(), out typeSpec)
+                    ? typeSpec
+                    : throw exception
+                : throw exception;
     }
 }

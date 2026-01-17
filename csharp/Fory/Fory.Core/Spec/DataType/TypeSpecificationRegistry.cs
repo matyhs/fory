@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using Fory.Core.SourceGenerator;
 
 namespace Fory.Core.Spec.DataType;
 
@@ -11,22 +12,22 @@ internal class TypeSpecificationRegistry
         /// <summary>
         ///     a boolean value (true or false).
         /// </summary>
-        Boolean = 1,
+        [PrimitiveTypeSpecification<bool>] Boolean = 1,
 
         /// <summary>
         ///     a 8-bit signed integer.
         /// </summary>
-        Int8 = 2,
+        [PrimitiveTypeSpecification<sbyte>] Int8 = 2,
 
         /// <summary>
         ///     a 16-bit signed integer.
         /// </summary>
-        Int16 = 3,
+        [PrimitiveTypeSpecification<short>] Int16 = 3,
 
         /// <summary>
         ///     a 32-bit signed integer.
         /// </summary>
-        Int32 = 4,
+        [PrimitiveTypeSpecification<int>] Int32 = 4,
 
         /// <summary>
         ///     a 32-bit signed integer which use fory var_int32 encoding.
@@ -36,7 +37,7 @@ internal class TypeSpecificationRegistry
         /// <summary>
         ///     a 64-bit signed integer.
         /// </summary>
-        Int64 = 6,
+        [PrimitiveTypeSpecification<long>] Int64 = 6,
 
         /// <summary>
         ///     a 64-bit signed integer which use fory PVL encoding.
@@ -51,17 +52,21 @@ internal class TypeSpecificationRegistry
         /// <summary>
         ///     a 16-bit floating point number.
         /// </summary>
+#if NET
+        [PrimitiveTypeSpecification<Half>]
+#endif
+        // TODO: Would it make sense to support this for .NET standard?
         Float16 = 9,
 
         /// <summary>
         ///     a 32-bit floating point number.
         /// </summary>
-        Float32 = 10,
+        [PrimitiveTypeSpecification<float>] Float32 = 10,
 
         /// <summary>
         ///     a 64-bit floating point number including NaN and Infinity.
         /// </summary>
-        Float64 = 11,
+        [PrimitiveTypeSpecification<double>] Float64 = 11,
 
         /// <summary>
         ///     a text string encoded using Latin1/UTF16/UTF-8 encoding.
@@ -210,7 +215,27 @@ internal class TypeSpecificationRegistry
         /// <summary>
         ///     an arrow table object.
         /// </summary>
-        ArrowTable = 40
+        ArrowTable = 40,
+
+        /// <summary>
+        ///     8-bit unsigned integer
+        /// </summary>
+        [PrimitiveTypeSpecification<byte>] UInt8 = 64,
+
+        /// <summary>
+        ///     16-bit unsigned integer
+        /// </summary>
+        [PrimitiveTypeSpecification<ushort>] UInt16 = 65,
+
+        /// <summary>
+        ///     32-bit unsigned integer
+        /// </summary>
+        [PrimitiveTypeSpecification<uint>] UInt32 = 66,
+
+        /// <summary>
+        ///     64-bit unsigned integer
+        /// </summary>
+        [PrimitiveTypeSpecification<ulong>] UInt64 = 68,
     }
 
     private static readonly TypeSpecificationFactory Factory = new();
@@ -224,6 +249,19 @@ internal class TypeSpecificationRegistry
         _registryByTypeId = new Dictionary<uint, ITypeSpecification>();
 
         RegisterInternal<BooleanTypeSpecification>();
+        RegisterInternal<Int8TypeSpecification>();
+        RegisterInternal<Int16TypeSpecification>();
+        RegisterInternal<Int32TypeSpecification>();
+        RegisterInternal<Int64TypeSpecification>();
+#if NET
+        RegisterInternal<Float16TypeSpecification>();
+#endif
+        RegisterInternal<Float32TypeSpecification>();
+        RegisterInternal<Float64TypeSpecification>();
+        RegisterInternal<UInt8TypeSpecification>();
+        RegisterInternal<UInt16TypeSpecification>();
+        RegisterInternal<UInt32TypeSpecification>();
+        RegisterInternal<UInt64TypeSpecification>();
     }
 
     public ITypeSpecification this[Type type] => _registryByType[type];

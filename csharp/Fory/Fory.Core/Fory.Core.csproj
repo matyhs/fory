@@ -2,7 +2,6 @@
 
     <PropertyGroup>
         <Nullable>enable</Nullable>
-        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <LangVersion>latest</LangVersion>
         <TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
     </PropertyGroup>
@@ -12,7 +11,10 @@
         </AssemblyAttribute>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="System.IO.Pipelines" Version="9.0.10"/>
+        <PackageReference Include="System.IO.Pipelines" Version="9.0.10" />
+    </ItemGroup>
+    <ItemGroup>
+      <ProjectReference Include="..\Fory.Core.SourceGenerator\Fory.Core.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
 </Project>

@@ -1,5 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.IO.Pipelines;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,19 +15,58 @@ internal static class ForyEncoding
     /// </summary>
     /// <param name="value"></param>
     /// <returns></returns>
-    public static IEnumerable<byte> AsVarUInt32(uint value)
+    public static byte[] AsVarUInt32(uint value)
     {
-        for (uint i = 0; i < 5; i++)
+        Span<byte> span = stackalloc byte[5];
+        var writtenBytes = WriteAsVarUInt32(value, span.Length, span);
+
+        if (writtenBytes == 1)
+            return span.Slice(0, 1).ToArray();
+
+        if (writtenBytes == 2)
+        {
+            var converted = (ushort)(span[1] << 8 | span[0]);
+            return BitConverter.GetBytes(converted);
+        }
+
+        if (writtenBytes == 3)
+        {
+            var converted = (ushort)(span[1] << 8 | span[0]);
+            var bytes = BitConverter.GetBytes(converted);
+            return bytes.Append(span[2]).ToArray();
+        }
+
+        if (writtenBytes == 4)
+        {
+            var converted = (uint)(span[3] << 24 | span[2] << 16 | span[1] << 8 | span[0]);
+            return BitConverter.GetBytes(converted);
+        }
+
+        if (writtenBytes == 5)
+        {
+            var converted = (uint)(span[3] << 24 | span[2] << 16 | span[1] <<  8 | span[0]);
+            var bytes = BitConverter.GetBytes(converted);
+            return bytes.Append(span[4]).ToArray();
+        }
+
+        return [];
+    }
+
+    private static int WriteAsVarUInt32(uint value, int maxLength, Span<byte> buffer)
+    {
+        for (int i = 0; i < maxLength; i++)
         {
             if (value < 0x80)
             {
-                yield return (byte)value;
-                yield break;
+                buffer[i] = (byte)value;
+                return i + 1;
             }
 
-            yield return (byte)((value & 0x7f) | 0x80);
+            buffer[i] = (byte)((value & 0x7f) | 0x80);
             value >>= 7;
         }
+
+        return maxLength;
     }
 
     /// <summary>
@@ -39,14 +79,21 @@ internal static class ForyEncoding
     public static async ValueTask<uint> FromVarUInt32Async(PipeReader reader,
         CancellationToken cancellationToken = default)
     {
-        uint value = 0;
-        for (uint i = 0; i < 5; i++)
+        var readResult = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+        var sequence = readResult.Buffer.Slice(0, sizeof(byte));
+        var local = MemoryMarshal.Read<byte>(sequence.First.Span);
+        reader.AdvanceTo(sequence.End);
+
+        if (local < 0x80)
+            return local;
+
+        var value = (uint)(local & 0x7f);
+        for (uint i = 1; i < 5; i++)
         {
-            var readResult = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-            var sequence = readResult.Buffer.Slice(0, sizeof(byte));
-            var local = MemoryMarshal.Read<byte>(sequence.First.Span);
-            value <<= 7;
-            value |= (byte)(local & 0x7f);
+            readResult = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            sequence = readResult.Buffer.Slice(0, sizeof(byte));
+            local = MemoryMarshal.Read<byte>(sequence.First.Span);
+            value |= (uint)(local & 0x7f) << 7 * (int)i;
             reader.AdvanceTo(sequence.End);
 
             if (local < 0x80)

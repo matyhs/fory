@@ -17,7 +17,7 @@ internal static class ForyEncoding
     /// <returns></returns>
     public static IEnumerable<byte> AsVarUInt32(uint value)
     {
-        for (int i = 0; i < 5; i++)
+        for (var i = 0; i < 5; i++)
         {
             if (value < 0x80)
             {
@@ -41,12 +41,12 @@ internal static class ForyEncoding
         CancellationToken cancellationToken = default)
     {
         uint value = 0;
-        for (uint i = 0; i < 5; i++)
+        for (var i = 0; i < 5; i++)
         {
             var readResult = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
             var sequence = readResult.Buffer.Slice(0, sizeof(byte));
             var local = MemoryMarshal.Read<byte>(sequence.First.Span);
-            value |= (uint)(local & 0x7f) << 7 * (int)i;
+            value |= (uint)(local & 0x7f) << 7 * i;
             reader.AdvanceTo(sequence.End);
 
             if (local < 0x80)
@@ -64,7 +64,7 @@ internal static class ForyEncoding
     /// <returns></returns>
     public static IEnumerable<byte> AsVarUInt64(ulong value)
     {
-        for (int i = 0; i < 9; i++)
+        for (var i = 0; i < 9; i++)
         {
             if (value < 0x80)
             {
@@ -88,16 +88,53 @@ internal static class ForyEncoding
         CancellationToken cancellationToken = default)
     {
         ulong value = 0;
-        for (uint i = 0; i < 9; i++)
+        for (var i = 0; i < 9; i++)
         {
             var readResult = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
             var sequence = readResult.Buffer.Slice(0, sizeof(byte));
             var local = MemoryMarshal.Read<byte>(sequence.First.Span);
-            value |= (ulong)(local & 0x7f) << 7 * (int)i;
+            value |= (ulong)(local & 0x7f) << 7 * i;
             reader.AdvanceTo(sequence.End);
 
             if (local < 0x80)
                 break;
+        }
+
+        return value;
+    }
+
+    /// <summary>
+    ///     Fory VarUInt36, consisting of 1~5 bytes, encodes unsigned integers to fit in a 7-bit grouping per byte. The
+    ///     most significant bit (MSB) indicates the existence of another byte.
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public static IEnumerable<byte> AsVarUInt36Small(ulong value)
+    {
+        const ulong maxValue = 1ul << 36;
+        if (value >= maxValue)
+            throw new NotSupportedException("Value too large for 36-bit encoding");
+
+        return AsVarUInt64(value);
+    }
+
+    public static async ValueTask<ulong> FromVarUInt36Async(PipeReader reader,
+        CancellationToken cancellationToken = default)
+    {
+        ulong value = 0;
+        for (var i = 0; i < 6; i++)
+        {
+            var readResult = await reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            var sequence = readResult.Buffer.Slice(0, sizeof(byte));
+            var local = MemoryMarshal.Read<byte>(sequence.First.Span);
+            value |= (ulong)(local & 0x7f) << 7 * i;
+            reader.AdvanceTo(sequence.End);
+
+            if (local < 0x80)
+                break;
+
+            if (i == 5)
+                throw new OverflowException("Value too large for 36-bit encoding");
         }
 
         return value;

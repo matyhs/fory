@@ -141,7 +141,7 @@ public abstract class ForySerializerBase : IForySerializer
 
         void WriteForyTypeId(uint structTypeId)
         {
-            var buffer = ForyEncoding.AsVarUInt32(structTypeId);
+            var buffer = ForyEncoding.AsVarUInt32(structTypeId).ToArray();
             var bufferSpan = context.Writer.GetSpan(buffer.Length);
             buffer.CopyTo(bufferSpan);
             context.Writer.Advance(buffer.Length);
@@ -151,7 +151,7 @@ public abstract class ForySerializerBase : IForySerializer
             where TTypeSpecification : IUserDefinedTypeSpecification
         {
             var metaIdx = context.TypeMetaRegistry.TryRegister(structTypeMetaSpec);
-            var metaIdxEncoding = ForyEncoding.AsVarUInt32(metaIdx);
+            var metaIdxEncoding = ForyEncoding.AsVarUInt32(metaIdx).ToArray();
             var structSpan = context.Writer.GetSpan(metaIdxEncoding.Length);
             metaIdxEncoding.CopyTo(structSpan);
             context.Writer.Advance(metaIdxEncoding.Length);

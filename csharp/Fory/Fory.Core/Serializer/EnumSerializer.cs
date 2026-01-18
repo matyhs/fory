@@ -20,7 +20,7 @@ internal sealed class EnumSerializer : ForySerializerBase
             throw new SerializationException($"Unable to serialize {value} using enum serializer");
 
         var underlyingValue = GetUnderlyingValueAsUInt32(value);
-        var converted = ForyEncoding.AsVarUInt32(underlyingValue);
+        var converted = ForyEncoding.AsVarUInt32(underlyingValue).ToArray();
         var span = context.Writer.GetSpan(converted.Length);
         converted.CopyTo(span);
         context.Writer.Advance(converted.Length);

@@ -8,6 +8,16 @@ namespace Fory.Core.Serializer;
 
 public sealed class StringSerializer : ForySerializerBase<string>
 {
+#if NETSTANDARD
+    private readonly System.Text.Encoding Latin1;
+    public StringSerializer()
+    {
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
+        Latin1 = System.Text.Encoding.GetEncoding("ISO-8859-1");
+    }
+#endif
+
     /// <summary>
     ///     Serializes string using UTF-8 encoding. See https://learn.microsoft.com/en-us/dotnet/api/System.Text.Encoding.Default?view=netstandard-2.0.
     /// </summary>
@@ -45,10 +55,12 @@ public sealed class StringSerializer : ForySerializerBase<string>
         return encoding switch
         {
 #if NET
-            0 or 1 => throw new NotImplementedException(),
-            2 => System.Text.Encoding.UTF8.GetString(sequence.First.Span),
+            0 => System.Text.Encoding.Latin1.GetString(sequence.FirstSpan),
+            1 => System.Text.Encoding.Unicode.GetString(sequence.FirstSpan),
+            2 => System.Text.Encoding.UTF8.GetString(sequence.FirstSpan),
 #else
-            0 or 1 => throw new NotImplementedException(),
+            0 => Latin1.GetString(sequence.First.Span.ToArray()),
+            1 => System.Text.Encoding.Unicode.GetString(sequence.First.Span.ToArray()),
             2 => System.Text.Encoding.UTF8.GetString(sequence.First.Span.ToArray()),
 #endif
             _ => throw new NotSupportedException("Unsupported string encoding type")

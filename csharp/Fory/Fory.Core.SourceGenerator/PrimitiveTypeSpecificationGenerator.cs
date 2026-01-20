@@ -37,6 +37,7 @@ public class PrimitiveTypeSpecificationGenerator : IIncrementalGenerator
                                          internal sealed class PrimitiveTypeSpecificationAttribute<TType> : global::System.Attribute
                                          {
                                              public string? TypeName { get; set; }
+                                             public string? FullyQualifiedSerializerTypeName { get; set; }
                                          }
                                      }
 
@@ -61,11 +62,13 @@ public class PrimitiveTypeSpecificationGenerator : IIncrementalGenerator
 
             var enumName = context.TargetSymbol.Name;
             var typeName = attribute.NamedArguments.FirstOrDefault(x => x.Key == "TypeName").Value.Value?.ToString();
+            var fullyQualifiedSerializerTypeName = attribute.NamedArguments
+                .FirstOrDefault(x => x.Key == "FullyQualifiedSerializerTypeName").Value.Value?.ToString();
             var typeRepresentation = attribute.AttributeClass.TypeArguments[0];
             var typeAlias = typeRepresentation.ToDisplayString();
             var isBuiltInUnmanagedType = typeRepresentation.IsBuiltInUnmanagedType();
 
-            return new PrimitiveTypeSpecificationInfo(typeName, typeAlias, enumName, isBuiltInUnmanagedType);
+            return new PrimitiveTypeSpecificationInfo(typeName, typeAlias, enumName, isBuiltInUnmanagedType, fullyQualifiedSerializerTypeName);
         }
 
         return null;
@@ -74,6 +77,9 @@ public class PrimitiveTypeSpecificationGenerator : IIncrementalGenerator
     private static void GenerateSerializer(SourceProductionContext productionContext,
         PrimitiveTypeSpecificationInfo? generationInfo)
     {
+        if (!string.IsNullOrEmpty(generationInfo!.Value.FullyQualifiedSerializerTypeName))
+            return;
+
         var typeAlias = generationInfo!.Value.TypeAlias;
         var typeSizeDefinition = generationInfo.Value.IsBuiltInUnmanagedType
             ? $"const int typeSize = sizeof({typeAlias})"
@@ -144,16 +150,18 @@ public class PrimitiveTypeSpecificationGenerator : IIncrementalGenerator
         public string? TypeName { get; }
         public string TypeAlias { get; }
         public bool IsBuiltInUnmanagedType { get; }
+        public string? FullyQualifiedSerializerTypeName { get; }
 
-        public string SerializerName => $"{TypeName ?? EnumName}Serializer";
+        public string SerializerName => FullyQualifiedSerializerTypeName ?? $"{TypeName ?? EnumName}Serializer";
         public string TypeSpecificationName => $"{TypeName ?? EnumName}TypeSpecification";
 
-        public PrimitiveTypeSpecificationInfo(string? typeName, string typeAlias, string enumName, bool isBuiltInUnmanagedType)
+        public PrimitiveTypeSpecificationInfo(string? typeName, string typeAlias, string enumName, bool isBuiltInUnmanagedType, string? fullyQualifiedSerializerTypeName)
         {
             TypeName = typeName;
             TypeAlias = typeAlias;
             EnumName = enumName;
             IsBuiltInUnmanagedType = isBuiltInUnmanagedType;
+            FullyQualifiedSerializerTypeName = string.IsNullOrEmpty(fullyQualifiedSerializerTypeName) ? null : $"global::{fullyQualifiedSerializerTypeName}";
         }
     }
 }

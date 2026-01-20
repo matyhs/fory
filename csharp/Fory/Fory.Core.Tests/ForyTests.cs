@@ -235,4 +235,47 @@ public class ForyTests
         // Assert
         Assert.Equal(value, actual);
     }
+
+    [Theory]
+    [InlineData("a sample sentence.")]
+    [InlineData("email@email.com")]
+    [InlineData("    ")]
+    [InlineData("""
+
+                 {
+                    "glossary": {
+                        "title": "example glossary",
+                		"GlossDiv": {
+                            "title": "S",
+                			"GlossList": {
+                                "GlossEntry": {
+                                    "ID": "SGML",
+                					"SortAs": "SGML",
+                					"GlossTerm": "Standard Generalized Markup Language",
+                					"Acronym": "SGML",
+                					"Abbrev": "ISO 8879:1986",
+                					"GlossDef": {
+                                        "para": "A meta-markup language, used to create markup languages such as DocBook.",
+                						"GlossSeeAlso": ["GML", "XML"]
+                                    },
+                					"GlossSee": "markup"
+                                }
+                            }
+                        }
+                    }
+                }
+
+                """)] // Example from https://json.org/example.html
+    public async Task Should_Serialize_Deserialize_String(string value)
+    {
+        // Arrange
+        var fory = new Fory(new ForyOptions { Xlang = true });
+
+        // Act
+        var bufferResult = await fory.SerializeAsync(value);
+        var actual = await fory.DeserializeAsync<string>(bufferResult);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
 }

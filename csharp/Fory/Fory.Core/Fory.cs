@@ -54,7 +54,6 @@ public class Fory
 
     public async ValueTask<TValue?> DeserializeAsync<TValue>(ReadOnlySequence<byte> buffer,
         CancellationToken cancellationToken = default)
-        where TValue : new()
     {
         var context = new DeserializationContext(_options, _typeSpecificationRegistry);
         context.Initialize(buffer);

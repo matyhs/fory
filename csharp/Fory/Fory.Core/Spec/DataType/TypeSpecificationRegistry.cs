@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Reflection;
 using Fory.Core.SourceGenerator;
 
 namespace Fory.Core.Spec.DataType;
@@ -71,7 +72,7 @@ internal class TypeSpecificationRegistry
         /// <summary>
         ///     a text string encoded using Latin1/UTF16/UTF-8 encoding.
         /// </summary>
-        String = 12,
+        [PrimitiveTypeSpecification<string>(FullyQualifiedSerializerTypeName = "Fory.Core.Serializer.StringSerializer")] String = 12,
 
         /// <summary>
         ///     a data type consisting of a set of named values. Rust enum with non-predefined field values are not supported as an
@@ -262,6 +263,7 @@ internal class TypeSpecificationRegistry
         RegisterInternal<UInt16TypeSpecification>();
         RegisterInternal<UInt32TypeSpecification>();
         RegisterInternal<UInt64TypeSpecification>();
+        RegisterInternal<StringTypeSpecification>();
     }
 
     public ITypeSpecification this[Type type] => _registryByType[type];

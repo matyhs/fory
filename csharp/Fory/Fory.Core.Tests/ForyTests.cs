@@ -278,4 +278,27 @@ public class ForyTests
         // Assert
         Assert.Equal(value, actual);
     }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(short.MinValue)]
+    [InlineData(short.MaxValue)]
+    [InlineData(int.MinValue)]
+    [InlineData(int.MaxValue)]
+    [InlineData(long.MinValue)]
+    [InlineData(long.MaxValue)]
+    public async Task Should_Serialize_Deserialize_Duration(long ticks)
+    {
+        // Arrange
+        var value = TimeSpan.FromTicks(ticks);
+        var fory = new Fory(new ForyOptions { Xlang = true });
+
+        // Act
+        var bufferResult = await fory.SerializeAsync(value);
+        var actual = await fory.DeserializeAsync<TimeSpan>(bufferResult);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
 }

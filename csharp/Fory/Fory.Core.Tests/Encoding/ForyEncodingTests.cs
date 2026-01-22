@@ -94,4 +94,29 @@ public class ForyEncodingTests
         // Assert
         Assert.Equal(input, result);
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(1)]
+    [InlineData(-2)]
+    [InlineData(2)]
+    [InlineData(int.MinValue)]
+    [InlineData(int.MaxValue)]
+    [InlineData(uint.MinValue)]
+    [InlineData(uint.MaxValue)]
+    public async Task Should_Encode_Decode_VarInt64(long input)
+    {
+        // Arrange
+        var pipe = new Pipe();
+
+        // Act
+        var byteResult = ForyEncoding.AsVarInt64(input).ToArray();
+        await pipe.Writer.WriteAsync(byteResult);
+        await pipe.Writer.CompleteAsync();
+        var result = await ForyEncoding.FromVarInt64Async(pipe.Reader);
+
+        // Assert
+        Assert.Equal(input, result);
+    }
 }

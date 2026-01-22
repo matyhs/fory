@@ -6,7 +6,7 @@ using Fory.Core.Encoding;
 
 namespace Fory.Core.Serializer;
 
-public sealed class StringSerializer : ForySerializerBase<string>
+internal sealed class StringSerializer : ForySerializerBase<string>
 {
 #if NETSTANDARD
     private readonly System.Text.Encoding Latin1;

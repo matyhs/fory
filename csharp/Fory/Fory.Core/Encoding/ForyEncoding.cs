@@ -104,7 +104,7 @@ internal static class ForyEncoding
     }
 
     /// <summary>
-    ///     Fory VarUInt36, consisting of 1~5 bytes, encodes unsigned integers to fit in a 7-bit grouping per byte. The
+    ///     Fory VarUInt36, consisting of 1~6 bytes, encodes unsigned integers to fit in a 7-bit grouping per byte. The
     ///     most significant bit (MSB) indicates the existence of another byte.
     /// </summary>
     /// <param name="value"></param>
@@ -118,6 +118,14 @@ internal static class ForyEncoding
         return AsVarUInt64(value);
     }
 
+    /// <summary>
+    ///     Fory VarUInt36, consisting of 1~6 bytes, decodes buffer by reading a 7-bit grouping per byte. The
+    ///     most significant bit (MSB) is disregarded from the decoded value.
+    /// </summary>
+    /// <param name="reader"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    /// <exception cref="OverflowException">Occurs when the decoded value exceed 36-bits</exception>
     public static async ValueTask<ulong> FromVarUInt36Async(PipeReader reader,
         CancellationToken cancellationToken = default)
     {
@@ -138,5 +146,33 @@ internal static class ForyEncoding
         }
 
         return value;
+    }
+
+    /// <summary>
+    ///     Fory VarInt64, consisting of 1~9 bytes, encodes signed integers to fit in a 7-bit grouping per byte. The
+    ///     signed integer is first mapped into positive unsigned integer using ZigZag encoding, then encoded as unsigned
+    ///     varint64
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public static IEnumerable<byte> AsVarInt64(long value)
+    {
+        var zigzag = (ulong)((value << 1) ^ (value >> 63));
+        return AsVarUInt64(zigzag);
+    }
+
+    /// <summary>
+    ///     Fory VarUInt64, consisting of 1~9 bytes, decodes buffer by reading a 7-bit grouping per byte. The value is
+    ///     first decoded as varuint64, which represents the zigzag encoded value. This value is then decoded using
+    ///     ZigZag encoding.
+    /// </summary>
+    /// <param name="reader"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public static async ValueTask<long> FromVarInt64Async(PipeReader reader,
+        CancellationToken cancellationToken = default)
+    {
+        var value = await FromVarUInt64Async(reader, cancellationToken).ConfigureAwait(false);
+        return (long)(value >> 1) ^ -(long)(value & 1);
     }
 }

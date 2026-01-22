@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using System.Reflection;
 using Fory.Core.SourceGenerator;
 
 namespace Fory.Core.Spec.DataType;
@@ -134,7 +133,7 @@ internal class TypeSpecificationRegistry
         /// <summary>
         ///     an absolute length of time, independent of any calendar/timezone, as a count of nanoseconds.
         /// </summary>
-        Duration = 24,
+        [PrimitiveTypeSpecification<TimeSpan>(FullyQualifiedSerializerTypeName = "Fory.Core.Serializer.DurationSerializer")] Duration = 24,
 
         /// <summary>
         ///     a point in time, independent of any calendar/timezone, as a count of nanoseconds. The count is relative to an epoch
@@ -264,6 +263,7 @@ internal class TypeSpecificationRegistry
         RegisterInternal<UInt32TypeSpecification>();
         RegisterInternal<UInt64TypeSpecification>();
         RegisterInternal<StringTypeSpecification>();
+        RegisterInternal<DurationTypeSpecification>();
     }
 
     public ITypeSpecification this[Type type] => _registryByType[type];

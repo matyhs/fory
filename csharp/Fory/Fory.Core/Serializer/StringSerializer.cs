@@ -51,8 +51,7 @@ internal sealed class StringSerializer : ForySerializerBase<string>
         var length = (long)(header >> 2);
         var readResult = await context.Reader.ReadAsync(cancellationToken);
         var sequence = readResult.Buffer.Slice(0, length);
-
-        return encoding switch
+        var value = encoding switch
         {
 #if NET
             0 => System.Text.Encoding.Latin1.GetString(sequence.FirstSpan),
@@ -65,5 +64,8 @@ internal sealed class StringSerializer : ForySerializerBase<string>
 #endif
             _ => throw new NotSupportedException("Unsupported string encoding type")
         };
+        context.Reader.AdvanceTo(sequence.End);
+
+        return value;
     }
 }

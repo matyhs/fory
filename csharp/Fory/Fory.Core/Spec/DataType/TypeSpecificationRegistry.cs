@@ -139,12 +139,12 @@ internal class TypeSpecificationRegistry
         ///     a point in time, independent of any calendar/timezone, as a count of nanoseconds. The count is relative to an epoch
         ///     at UTC midnight on January 1, 1970.
         /// </summary>
-        Timestamp = 25,
+        [PrimitiveTypeSpecification<DateTimeOffset>(FullyQualifiedSerializerTypeName = "Fory.Core.Serializer.TimestampSerializer")] Timestamp = 25,
 
         /// <summary>
         ///     a naive date without timezone. The count is days relative to an epoch at UTC midnight on Jan 1, 1970.
         /// </summary>
-        LocalDate = 26,
+        [PrimitiveTypeSpecification<DateTime>(FullyQualifiedSerializerTypeName = "Fory.Core.Serializer.LocalDateSerializer")] LocalDate = 26,
 
         /// <summary>
         ///     exact decimal value represented as an integer value in two's complement.
@@ -264,6 +264,8 @@ internal class TypeSpecificationRegistry
         RegisterInternal<UInt64TypeSpecification>();
         RegisterInternal<StringTypeSpecification>();
         RegisterInternal<DurationTypeSpecification>();
+        RegisterInternal<TimestampTypeSpecification>();
+        RegisterInternal<LocalDateTypeSpecification>();
     }
 
     public ITypeSpecification this[Type type] => _registryByType[type];

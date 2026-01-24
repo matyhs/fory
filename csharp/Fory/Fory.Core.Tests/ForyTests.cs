@@ -301,4 +301,46 @@ public class ForyTests
         // Assert
         Assert.Equal(value, actual);
     }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(short.MinValue)]
+    [InlineData(short.MaxValue)]
+    [InlineData(int.MinValue)]
+    [InlineData(int.MaxValue)]
+    public async Task Should_Serialize_Deserialize_Timestamp(long ticks)
+    {
+        // Arrange
+        var value = new DateTimeOffset(ticks + DateTimeOffset.UnixEpoch.Ticks, TimeSpan.Zero);
+        var fory = new Fory(new ForyOptions { Xlang = true });
+
+        // Act
+        var bufferResult = await fory.SerializeAsync(value);
+        var actual = await fory.DeserializeAsync<DateTimeOffset>(bufferResult);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(short.MinValue)]
+    [InlineData(short.MaxValue)]
+    [InlineData(int.MinValue)]
+    [InlineData(int.MaxValue)]
+    public async Task Should_Serialize_Deserialize_LocalDate(long ticks)
+    {
+        // Arrange
+        var value = new DateTimeOffset(ticks + DateTimeOffset.UnixEpoch.Ticks, TimeSpan.Zero).Date;
+        var fory = new Fory(new ForyOptions { Xlang = true });
+
+        // Act
+        var bufferResult = await fory.SerializeAsync(value);
+        var actual = await fory.DeserializeAsync<DateTime>(bufferResult);
+
+        // Assert
+        Assert.Equal(value, actual);
+    }
 }

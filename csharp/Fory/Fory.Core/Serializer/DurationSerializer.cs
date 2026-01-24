@@ -34,6 +34,7 @@ internal sealed class DurationSerializer : ForySerializerBase<TimeSpan>
         var readerResult = await context.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
         var sequence = readerResult.Buffer.Slice(0, sizeof(int));
         var nanosecondsPart = BinaryPrimitives.ReadInt32LittleEndian(sequence.First.Span);
+        context.Reader.AdvanceTo(sequence.End);
 
         var ticks = secondsPart * 10_000_000 + nanosecondsPart / 100;
         return TimeSpan.FromTicks(ticks);

@@ -1,4 +1,21 @@
-﻿using System.Text;
+﻿// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+using System.Text;
 using Fory.Core.SourceGenerator.Extensions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
@@ -15,9 +32,9 @@ public class PrimitiveTypeSpecificationGenerator : IIncrementalGenerator
         var fullyQualifiedName = "Fory.Core.SourceGenerator.PrimitiveTypeSpecificationAttribute`1";
         var typeSpecificationToGenerate =
             context.SyntaxProvider.ForAttributeWithMetadataName(
-                    fullyQualifiedMetadataName: fullyQualifiedName,
-                    predicate: IsTargetForGeneration,
-                    transform: GetTargetForGeneration
+                    fullyQualifiedName,
+                    IsTargetForGeneration,
+                    GetTargetForGeneration
                 )
                 .Where(info => info is not null);
 
@@ -68,7 +85,8 @@ public class PrimitiveTypeSpecificationGenerator : IIncrementalGenerator
             var typeAlias = typeRepresentation.ToDisplayString();
             var isBuiltInUnmanagedType = typeRepresentation.IsBuiltInUnmanagedType();
 
-            return new PrimitiveTypeSpecificationInfo(typeName, typeAlias, enumName, isBuiltInUnmanagedType, fullyQualifiedSerializerTypeName);
+            return new PrimitiveTypeSpecificationInfo(typeName, typeAlias, enumName, isBuiltInUnmanagedType,
+                fullyQualifiedSerializerTypeName);
         }
 
         return null;
@@ -146,6 +164,18 @@ public class PrimitiveTypeSpecificationGenerator : IIncrementalGenerator
 
     private readonly record struct PrimitiveTypeSpecificationInfo
     {
+        public PrimitiveTypeSpecificationInfo(string? typeName, string typeAlias, string enumName,
+            bool isBuiltInUnmanagedType, string? fullyQualifiedSerializerTypeName)
+        {
+            TypeName = typeName;
+            TypeAlias = typeAlias;
+            EnumName = enumName;
+            IsBuiltInUnmanagedType = isBuiltInUnmanagedType;
+            FullyQualifiedSerializerTypeName = string.IsNullOrEmpty(fullyQualifiedSerializerTypeName)
+                ? null
+                : $"global::{fullyQualifiedSerializerTypeName}";
+        }
+
         public string EnumName { get; }
         public string? TypeName { get; }
         public string TypeAlias { get; }
@@ -154,14 +184,5 @@ public class PrimitiveTypeSpecificationGenerator : IIncrementalGenerator
 
         public string SerializerName => FullyQualifiedSerializerTypeName ?? $"{TypeName ?? EnumName}Serializer";
         public string TypeSpecificationName => $"{TypeName ?? EnumName}TypeSpecification";
-
-        public PrimitiveTypeSpecificationInfo(string? typeName, string typeAlias, string enumName, bool isBuiltInUnmanagedType, string? fullyQualifiedSerializerTypeName)
-        {
-            TypeName = typeName;
-            TypeAlias = typeAlias;
-            EnumName = enumName;
-            IsBuiltInUnmanagedType = isBuiltInUnmanagedType;
-            FullyQualifiedSerializerTypeName = string.IsNullOrEmpty(fullyQualifiedSerializerTypeName) ? null : $"global::{fullyQualifiedSerializerTypeName}";
-        }
     }
 }

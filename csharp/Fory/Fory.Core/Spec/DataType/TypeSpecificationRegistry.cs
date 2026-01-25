@@ -1,4 +1,21 @@
-﻿using System;
+﻿// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using Fory.Core.SourceGenerator;
@@ -71,7 +88,8 @@ internal class TypeSpecificationRegistry
         /// <summary>
         ///     a text string encoded using Latin1/UTF16/UTF-8 encoding.
         /// </summary>
-        [PrimitiveTypeSpecification<string>(FullyQualifiedSerializerTypeName = "Fory.Core.Serializer.StringSerializer")] String = 12,
+        [PrimitiveTypeSpecification<string>(FullyQualifiedSerializerTypeName = "Fory.Core.Serializer.StringSerializer")]
+        String = 12,
 
         /// <summary>
         ///     a data type consisting of a set of named values. Rust enum with non-predefined field values are not supported as an
@@ -133,18 +151,24 @@ internal class TypeSpecificationRegistry
         /// <summary>
         ///     an absolute length of time, independent of any calendar/timezone, as a count of nanoseconds.
         /// </summary>
-        [PrimitiveTypeSpecification<TimeSpan>(FullyQualifiedSerializerTypeName = "Fory.Core.Serializer.DurationSerializer")] Duration = 24,
+        [PrimitiveTypeSpecification<TimeSpan>(FullyQualifiedSerializerTypeName =
+            "Fory.Core.Serializer.DurationSerializer")]
+        Duration = 24,
 
         /// <summary>
         ///     a point in time, independent of any calendar/timezone, as a count of nanoseconds. The count is relative to an epoch
         ///     at UTC midnight on January 1, 1970.
         /// </summary>
-        [PrimitiveTypeSpecification<DateTimeOffset>(FullyQualifiedSerializerTypeName = "Fory.Core.Serializer.TimestampSerializer")] Timestamp = 25,
+        [PrimitiveTypeSpecification<DateTimeOffset>(FullyQualifiedSerializerTypeName =
+            "Fory.Core.Serializer.TimestampSerializer")]
+        Timestamp = 25,
 
         /// <summary>
         ///     a naive date without timezone. The count is days relative to an epoch at UTC midnight on Jan 1, 1970.
         /// </summary>
-        [PrimitiveTypeSpecification<DateTime>(FullyQualifiedSerializerTypeName = "Fory.Core.Serializer.LocalDateSerializer")] LocalDate = 26,
+        [PrimitiveTypeSpecification<DateTime>(FullyQualifiedSerializerTypeName =
+            "Fory.Core.Serializer.LocalDateSerializer")]
+        LocalDate = 26,
 
         /// <summary>
         ///     exact decimal value represented as an integer value in two's complement.
@@ -235,7 +259,7 @@ internal class TypeSpecificationRegistry
         /// <summary>
         ///     64-bit unsigned integer
         /// </summary>
-        [PrimitiveTypeSpecification<ulong>] UInt64 = 68,
+        [PrimitiveTypeSpecification<ulong>] UInt64 = 68
     }
 
     private static readonly TypeSpecificationFactory Factory = new();

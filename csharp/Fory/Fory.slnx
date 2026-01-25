@@ -1,5 +1,5 @@
 <Solution>
-    <Project Path="Fory.Core.SourceGenerator/Fory.Core.SourceGenerator.csproj" />
-    <Project Path="Fory.Core.Tests/Fory.Core.Tests.csproj" />
-    <Project Path="Fory.Core/Fory.Core.csproj" />
+    <Project Path="Fory.Core.SourceGenerator/Fory.Core.SourceGenerator.csproj"/>
+    <Project Path="Fory.Core.Tests/Fory.Core.Tests.csproj"/>
+    <Project Path="Fory.Core/Fory.Core.csproj"/>
 </Solution>

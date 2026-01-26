@@ -49,4 +49,9 @@ internal class TypeMetaRegistry
         _typeIndexMap.Add(type, index);
         return index;
     }
+
+    public bool HasEntry()
+    {
+        return _typeDefinitions.Count > 0;
+    }
 }

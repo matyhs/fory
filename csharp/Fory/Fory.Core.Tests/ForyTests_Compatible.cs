@@ -1,33 +1,14 @@
-﻿/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-
-namespace Fory.Core.Tests;
+﻿namespace Fory.Core.Tests;
 
 public partial class ForyTests
 {
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task Should_Serialize_Deserialize_Boolean(bool value)
+    public async Task Should_Serialize_Deserialize_Boolean_Compatible(bool value)
     {
         // Arrange
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -43,10 +24,10 @@ public partial class ForyTests
     [InlineData(65)]
     [InlineData(sbyte.MinValue)]
     [InlineData(sbyte.MaxValue)]
-    public async Task Should_Serialize_Deserialize_Int8(sbyte value)
+    public async Task Should_Serialize_Deserialize_Int8_Compatible(sbyte value)
     {
         // Arrange
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -63,10 +44,10 @@ public partial class ForyTests
     [InlineData(sbyte.MaxValue)]
     [InlineData(short.MinValue)]
     [InlineData(short.MaxValue)]
-    public async Task Should_Serialize_Deserialize_Int16(short value)
+    public async Task Should_Serialize_Deserialize_Int16_Compatible(short value)
     {
         // Arrange
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -83,10 +64,10 @@ public partial class ForyTests
     [InlineData(short.MaxValue)]
     [InlineData(int.MinValue)]
     [InlineData(int.MaxValue)]
-    public async Task Should_Serialize_Deserialize_Int32(int value)
+    public async Task Should_Serialize_Deserialize_Int32_Compatible(int value)
     {
         // Arrange
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -103,10 +84,10 @@ public partial class ForyTests
     [InlineData(int.MaxValue)]
     [InlineData(long.MinValue)]
     [InlineData(long.MaxValue)]
-    public async Task Should_Serialize_Deserialize_Int64(long value)
+    public async Task Should_Serialize_Deserialize_Int64_Compatible(long value)
     {
         // Arrange
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -123,10 +104,10 @@ public partial class ForyTests
     [InlineData(234.67)]
     [InlineData(-65504)]
     [InlineData(65504)]
-    public async Task Should_Serialize_Deserialize_Float16(Half value)
+    public async Task Should_Serialize_Deserialize_Float16_Compatible(Half value)
     {
         // Arrange
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -143,10 +124,10 @@ public partial class ForyTests
     [InlineData(234.67)]
     [InlineData(float.MinValue)]
     [InlineData(float.MaxValue)]
-    public async Task Should_Serialize_Deserialize_Float32(float value)
+    public async Task Should_Serialize_Deserialize_Float32_Compatible(float value)
     {
         // Arrange
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true,  Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -163,10 +144,10 @@ public partial class ForyTests
     [InlineData(float.MaxValue)]
     [InlineData(double.MinValue)]
     [InlineData(double.MaxValue)]
-    public async Task Should_Serialize_Deserialize_Float64(double value)
+    public async Task Should_Serialize_Deserialize_Float64_Compatible(double value)
     {
         // Arrange
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -182,10 +163,10 @@ public partial class ForyTests
     [InlineData(65)]
     [InlineData(byte.MinValue)]
     [InlineData(byte.MaxValue)]
-    public async Task Should_Serialize_Deserialize_UInt8(byte value)
+    public async Task Should_Serialize_Deserialize_UInt8_Compatible(byte value)
     {
         // Arrange
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -202,10 +183,10 @@ public partial class ForyTests
     [InlineData(byte.MaxValue)]
     [InlineData(ushort.MinValue)]
     [InlineData(ushort.MaxValue)]
-    public async Task Should_Serialize_Deserialize_UInt16(ushort value)
+    public async Task Should_Serialize_Deserialize_UInt16_Compatible(ushort value)
     {
         // Arrange
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -222,10 +203,10 @@ public partial class ForyTests
     [InlineData(ushort.MaxValue)]
     [InlineData(uint.MinValue)]
     [InlineData(uint.MaxValue)]
-    public async Task Should_Serialize_Deserialize_UInt32(uint value)
+    public async Task Should_Serialize_Deserialize_UInt32_Compatible(uint value)
     {
         // Arrange
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -242,10 +223,10 @@ public partial class ForyTests
     [InlineData(uint.MaxValue)]
     [InlineData(ulong.MinValue)]
     [InlineData(ulong.MaxValue)]
-    public async Task Should_Serialize_Deserialize_UInt64(ulong value)
+    public async Task Should_Serialize_Deserialize_UInt64_Compatible(ulong value)
     {
         // Arrange
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -285,10 +266,10 @@ public partial class ForyTests
                 }
 
                 """)] // Example from https://json.org/example.html
-    public async Task Should_Serialize_Deserialize_String(string value)
+    public async Task Should_Serialize_Deserialize_String_Compatible(string value)
     {
         // Arrange
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -307,11 +288,11 @@ public partial class ForyTests
     [InlineData(int.MaxValue)]
     [InlineData(long.MinValue)]
     [InlineData(long.MaxValue)]
-    public async Task Should_Serialize_Deserialize_Duration(long ticks)
+    public async Task Should_Serialize_Deserialize_Duration_Compatible(long ticks)
     {
         // Arrange
         var value = TimeSpan.FromTicks(ticks);
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -328,11 +309,11 @@ public partial class ForyTests
     [InlineData(short.MaxValue)]
     [InlineData(int.MinValue)]
     [InlineData(int.MaxValue)]
-    public async Task Should_Serialize_Deserialize_Timestamp(long ticks)
+    public async Task Should_Serialize_Deserialize_Timestamp_Compatible(long ticks)
     {
         // Arrange
         var value = new DateTimeOffset(ticks + DateTimeOffset.UnixEpoch.Ticks, TimeSpan.Zero);
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);
@@ -349,11 +330,11 @@ public partial class ForyTests
     [InlineData(short.MaxValue)]
     [InlineData(int.MinValue)]
     [InlineData(int.MaxValue)]
-    public async Task Should_Serialize_Deserialize_LocalDate(long ticks)
+    public async Task Should_Serialize_Deserialize_LocalDate_Compatible(long ticks)
     {
         // Arrange
         var value = new DateTimeOffset(ticks + DateTimeOffset.UnixEpoch.Ticks, TimeSpan.Zero).Date;
-        var fory = new Fory(new ForyOptions { Xlang = true });
+        var fory = new Fory(new ForyOptions { Xlang = true, Compatible = true });
 
         // Act
         var bufferResult = await fory.SerializeAsync(value);

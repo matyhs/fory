@@ -18,8 +18,8 @@
  */
 
 using System;
-using System.Buffers.Binary;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Fory.Core.Encoding;
 
 namespace Fory.Core.Spec.Meta;
@@ -65,8 +65,9 @@ internal static class TypeMetaStringResolver
         if (length > smallStringThreshold)
         {
             Array.Resize(ref buffer, buffer.Length + length + 8);
+            var hashCode = metaStringBytes.HashCode;
             var span = buffer.AsSpan(writtenBytes, 8);
-            BinaryPrimitives.WriteInt64LittleEndian(span, metaStringBytes.HashCode);
+            MemoryMarshal.Write(span, ref hashCode);
             writtenBytes += 8;
         }
         else

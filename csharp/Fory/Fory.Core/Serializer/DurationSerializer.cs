@@ -18,8 +18,8 @@
  */
 
 using System;
-using System.Buffers.Binary;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Fory.Core.Encoding;
@@ -40,7 +40,7 @@ internal sealed class DurationSerializer : ForySerializerBase<TimeSpan>
         context.Writer.Advance(secondsPartBuffer.Length);
 
         span = context.Writer.GetSpan(sizeof(int));
-        BinaryPrimitives.WriteInt32LittleEndian(span, nanosecondsPart);
+        MemoryMarshal.Write(span, ref nanosecondsPart);
         context.Writer.Advance(sizeof(int));
 
         await context.Writer.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -52,7 +52,7 @@ internal sealed class DurationSerializer : ForySerializerBase<TimeSpan>
         var secondsPart = await ForyEncoding.FromVarInt64Async(context.Reader, cancellationToken).ConfigureAwait(false);
         var readerResult = await context.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
         var sequence = readerResult.Buffer.Slice(0, sizeof(int));
-        var nanosecondsPart = BinaryPrimitives.ReadInt32LittleEndian(sequence.First.Span);
+        var nanosecondsPart = MemoryMarshal.Read<int>(sequence.First.Span);
         context.Reader.AdvanceTo(sequence.End);
 
         var ticks = secondsPart * 10_000_000 + nanosecondsPart / 100;

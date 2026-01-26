@@ -66,6 +66,8 @@ public class Fory
             await typeSpec.Serializer.SerializeTypeInfoAsync(value, context, cancellationToken)
                 .ConfigureAwait(false);
             await typeSpec.Serializer.SerializeDataAsync(value, context, cancellationToken).ConfigureAwait(false);
+            await typeSpec.Serializer.SerializeTypeMetaInfoAsync(value, context, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         return await context.CompleteAsync(cancellationToken);
@@ -82,6 +84,9 @@ public class Fory
             .ConfigureAwait(false);
         if (headerInfo.IsHeaderValidOrThrow(context) && headerInfo.IsNull)
             return default;
+
+        // TODO: load type meta info
+        await typeSpec.Serializer.DeserializeTypeMetaInfoAsync<TValue>(context, cancellationToken);
 
         var referenceInfo = await typeSpec.Serializer.DeserializeRefInfoAsync<TValue>(context, cancellationToken)
             .ConfigureAwait(false);

@@ -19,7 +19,6 @@
 
 using System;
 using System.Buffers;
-using System.Buffers.Binary;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -54,7 +53,11 @@ public abstract class ForySerializerBase : IForySerializer
         flag |= context.IsXlang ? ForyHeaderSpec.ForyConfigFlags.IsXlang : flag;
 
         var span = context.Writer.GetSpan(sizeof(ushort));
-        if (context.IsXlang) BinaryPrimitives.WriteUInt16LittleEndian(span, ForyHeaderSpec.MagicNumber);
+        if (context.IsXlang)
+        {
+            var magicNumber = ForyHeaderSpec.MagicNumber;
+            MemoryMarshal.Write(span, ref magicNumber);
+        }
 
         context.Writer.Advance(sizeof(ushort));
 
@@ -70,6 +73,7 @@ public abstract class ForySerializerBase : IForySerializer
             context.Writer.Advance(sizeof(byte));
         }
 
+        context.InitializeStartMetaOffset();
         await context.Writer.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -186,6 +190,13 @@ public abstract class ForySerializerBase : IForySerializer
         }
     }
 
+    public async Task SerializeTypeMetaInfoAsync<TValue>(TValue value, SerializationContext context,
+        CancellationToken cancellationToken = default)
+    {
+        await context.CalculateMetaOffsetAsync(cancellationToken);
+        // TODO: write type meta info for schema evolution
+    }
+
     public async ValueTask<HeaderInfo> DeserializeHeaderInfoAsync<TValue>(DeserializationContext context,
         CancellationToken cancellationToken = default)
     {
@@ -224,7 +235,7 @@ public abstract class ForySerializerBase : IForySerializer
             var buffer = pool.Rent(sizeof(ushort));
             foreach (var seq in sequence) seq.Span.CopyTo(buffer);
 
-            var magicNumber = BinaryPrimitives.ReadUInt16LittleEndian(buffer.AsSpan(0, sizeof(ushort)));
+            var magicNumber = MemoryMarshal.Read<ushort>(buffer.AsSpan(0, sizeof(ushort)));
             pool.Return(buffer);
             context.Reader.AdvanceTo(sequence.End);
 
@@ -263,6 +274,19 @@ public abstract class ForySerializerBase : IForySerializer
 
         context.TypeSpecificationRegistry.TryGetTypeSpecification(foryTypeId, out var typeSpec);
         return new TypeInfo<TValue>(typeSpec);
+    }
+
+    public async ValueTask DeserializeTypeMetaInfoAsync<TValue>(DeserializationContext context,
+        CancellationToken cancellationToken = default)
+    {
+        if (!context.IsCompatible) return;
+
+        var readResult = await context.Reader.ReadAsync(cancellationToken);
+        var sequence = readResult.Buffer.Slice(0, sizeof(int));
+        var metaOffset = MemoryMarshal.Read<int>(sequence.First.Span);
+        context.Reader.AdvanceTo(sequence.End);
+
+        // TODO: load type meta info for schema evolution
     }
 
     private static TypeSpecificationRegistry.KnownTypes ExtractKnownType(uint typeId)
@@ -329,6 +353,9 @@ public interface IForySerializer
     Task SerializeDataAsync<TValue>(TValue value, SerializationContext context,
         CancellationToken cancellationToken = default);
 
+    Task SerializeTypeMetaInfoAsync<TValue>(TValue value, SerializationContext context,
+        CancellationToken cancellationToken = default);
+
     ValueTask<HeaderInfo> DeserializeHeaderInfoAsync<TValue>(DeserializationContext context,
         CancellationToken cancellationToken = default);
 
@@ -339,5 +366,8 @@ public interface IForySerializer
         CancellationToken cancellationToken = default);
 
     ValueTask<object?> DeserializeDataAsync<TValue>(DeserializationContext context,
+        CancellationToken cancellationToken = default);
+
+    ValueTask DeserializeTypeMetaInfoAsync<TValue>(DeserializationContext context,
         CancellationToken cancellationToken = default);
 }

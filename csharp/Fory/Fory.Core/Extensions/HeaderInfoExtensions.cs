@@ -22,7 +22,7 @@ using Fory.Core.Spec;
 
 namespace Fory.Core.Extensions;
 
-public static class HeaderInfoExtensions
+internal static class HeaderInfoExtensions
 {
     public static bool IsHeaderValidOrThrow(this HeaderInfo headerInfo, DeserializationContext context)
     {

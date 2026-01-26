@@ -18,7 +18,7 @@
  */
 
 using System;
-using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Fory.Core.Utils;
@@ -32,7 +32,7 @@ internal sealed class TimestampSerializer : ForySerializerBase<DateTimeOffset>
     {
         var nanoseconds = (value - DateTimeUtils.GetUnixEpoch()).Ticks * 100;
         var span = context.Writer.GetSpan(sizeof(long));
-        BinaryPrimitives.WriteInt64LittleEndian(span, nanoseconds);
+        MemoryMarshal.Write(span, ref nanoseconds);
         context.Writer.Advance(sizeof(long));
 
         await context.Writer.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -43,7 +43,7 @@ internal sealed class TimestampSerializer : ForySerializerBase<DateTimeOffset>
     {
         var readResult = await context.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
         var sequence = readResult.Buffer.Slice(0, sizeof(long));
-        var nanoseconds = BinaryPrimitives.ReadInt64LittleEndian(sequence.First.Span);
+        var nanoseconds = MemoryMarshal.Read<long>(sequence.First.Span);
         var ticks = nanoseconds / 100 + DateTimeUtils.GetUnixEpoch().Ticks;
         context.Reader.AdvanceTo(sequence.End);
 

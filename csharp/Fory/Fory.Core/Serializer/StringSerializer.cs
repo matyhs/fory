@@ -19,6 +19,7 @@
 
 using System;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Fory.Core.Encoding;
@@ -27,16 +28,6 @@ namespace Fory.Core.Serializer;
 
 internal sealed class StringSerializer : ForySerializerBase<string>
 {
-#if NETSTANDARD
-    private readonly System.Text.Encoding Latin1;
-    public StringSerializer()
-    {
-        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-
-        Latin1 = System.Text.Encoding.GetEncoding("ISO-8859-1");
-    }
-#endif
-
     /// <summary>
     ///     Serializes string using UTF-8 encoding. See
     ///     https://learn.microsoft.com/en-us/dotnet/api/System.Text.Encoding.Default?view=netstandard-2.0.
@@ -88,4 +79,13 @@ internal sealed class StringSerializer : ForySerializerBase<string>
 
         return value;
     }
+#if NETSTANDARD
+    private readonly System.Text.Encoding Latin1;
+    public StringSerializer()
+    {
+        System.Text.Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
+        Latin1 = System.Text.Encoding.GetEncoding("ISO-8859-1");
+    }
+#endif
 }

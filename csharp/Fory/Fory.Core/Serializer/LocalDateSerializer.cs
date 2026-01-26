@@ -18,7 +18,7 @@
  */
 
 using System;
-using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Fory.Core.Utils;
@@ -32,7 +32,7 @@ internal sealed class LocalDateSerializer : ForySerializerBase<DateTime>
     {
         var days = (int)((value - DateTimeUtils.GetUnixEpoch().Date).Ticks / TimeSpan.TicksPerDay);
         var span = context.Writer.GetSpan(sizeof(int));
-        BinaryPrimitives.WriteInt32LittleEndian(span, days);
+        MemoryMarshal.Write(span, ref days);
         context.Writer.Advance(sizeof(int));
 
         await context.Writer.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -43,7 +43,7 @@ internal sealed class LocalDateSerializer : ForySerializerBase<DateTime>
     {
         var readResult = await context.Reader.ReadAsync(cancellationToken);
         var sequence = readResult.Buffer.Slice(0, sizeof(int));
-        var value = BinaryPrimitives.ReadInt32LittleEndian(sequence.First.Span);
+        var value = MemoryMarshal.Read<int>(sequence.First.Span);
         context.Reader.AdvanceTo(sequence.End);
 
         return DateTimeUtils.GetUnixEpoch().DateTime.AddDays(value);

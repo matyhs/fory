@@ -17,30 +17,40 @@
  * under the License.
  */
 
-using System;
-using Fory.Core.Serializer;
+using System.Collections.Generic;
 
-namespace Fory.Core.Spec.DataType;
+namespace Fory.Core.Spec.Ref;
 
-internal class EnumTypeSpecification<TEnum> : IEnumTypeSpecification
-    where TEnum : Enum
+internal class RefWriterRegistry
 {
-    public EnumTypeSpecification(bool includeNamespace)
+    private readonly Dictionary<object, uint> _registry = new();
+
+    public uint GetOrRegister(object key)
     {
-        IsRegisteredByName = true;
-        IsNamespaceIncluded = includeNamespace;
+        if (!_registry.TryGetValue(key, out var id))
+        {
+            id = (uint) _registry.Count;
+            _registry.Add(key, id);
+        }
+
+        return id;
+    }
+}
+
+internal class RefReaderRegistry
+{
+    private readonly Dictionary<uint, object> _registry = new();
+
+    public uint Register(object value)
+    {
+        var id = (uint) _registry.Count;
+        _registry.Add(id, value);
+
+        return id;
     }
 
-    public EnumTypeSpecification(uint typeId)
+    public TValue Get<TValue>(uint key)
     {
-        TypeId = typeId;
-        IsRegisteredByName = false;
+        return (TValue) _registry[key];
     }
-
-    public Type AssociatedType => typeof(TEnum);
-    public uint TypeId { get; }
-    public bool ReferenceTracking => false;
-    public bool IsRegisteredByName { get; }
-    public bool IsNamespaceIncluded { get; }
-    public IForySerializer Serializer => EnumSerializer.Instance.Value;
 }

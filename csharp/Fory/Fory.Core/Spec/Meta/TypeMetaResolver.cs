@@ -257,10 +257,13 @@ internal static class TypeMetaResolver
         var encodedNameLength =
             encoding.Encoding.GetBytes(propertyName, 0, propertyName.Length, fieldNameBuffer, 0);
 
-        var fieldHeader = EncodeFieldHeader(propertyInfo, encodedNameLength - 1, encoding.Flag);
-        var nullable = (fieldHeader & 2) == 2;
+        var typeSpec = typeSpecRegistry.GetTypeSpecification(propertyInfo.PropertyType);
+        var nullable = propertyInfo.PropertyType.IsNullable();
+        var fieldHeader =
+            EncodeFieldHeader(encoding.Flag, encodedNameLength - 1, nullable, typeSpec.ReferenceTracking);
 
-        const int fieldInfoRentLength = 100; // magic number
+        // TODO: magic number for now, but we could estimate the size based on the registered type
+        const int fieldInfoRentLength = 100;
         var fieldInfoBuffer = pool.Rent(fieldInfoRentLength);
         var encodedFieldInfoLength = EncodeFieldInfo(typeSpecRegistry, propertyInfo.PropertyType, false, nullable,
             0, ref fieldInfoBuffer);
@@ -285,15 +288,19 @@ internal static class TypeMetaResolver
     /// <summary>
     ///     | field name encoding: 2-bits | field name size: 4-bits | nullability: 1-bit | reference tracking: 1-bit
     /// </summary>
-    /// <param name="propertyInfo"></param>
-    /// <param name="encodedNameSize"></param>
     /// <param name="encodingFlag"></param>
-    private static byte EncodeFieldHeader(PropertyInfo propertyInfo, int encodedNameSize, byte encodingFlag)
+    /// <param name="encodedNameSize"></param>
+    /// <param name="nullable"></param>
+    /// <param name="refTracking"></param>
+    private static byte EncodeFieldHeader( byte encodingFlag, int encodedNameSize, bool nullable, bool refTracking)
     {
         const int maxFieldNameSize = 15;
         var header = (byte)(encodingFlag << 6);
         header |= (byte)(Math.Min(maxFieldNameSize, encodedNameSize) << 2);
-        var nullable = propertyInfo.PropertyType.IsNullable();
+
+        if (refTracking)
+            header |= 1;
+
         if (nullable)
             header |= 2;
 
@@ -321,6 +328,10 @@ internal static class TypeMetaResolver
         if (isNestedType)
         {
             header <<= 2;
+
+            if (typeSpec.ReferenceTracking)
+                header |= 1;
+
             if (nullable)
                 header |= 2;
         }

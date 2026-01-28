@@ -23,7 +23,7 @@ using Fory.Core.Serializer;
 
 namespace Fory.Core.Spec.DataType;
 
-internal class StructTypeSpecification<TObject> : IStructTypeSpecification
+internal class StructTypeSpecification<TObject> : IStructTypeSpecification where TObject : struct
 {
     public StructTypeSpecification(bool includeNamespace)
     {
@@ -40,6 +40,8 @@ internal class StructTypeSpecification<TObject> : IStructTypeSpecification
     public Type AssociatedType => typeof(TObject);
 
     public uint TypeId { get; }
+
+    public bool ReferenceTracking => false;
 
     public bool IsRegisteredByName { get; }
 

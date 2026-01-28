@@ -153,6 +153,7 @@ public class PrimitiveTypeSpecificationGenerator : IIncrementalGenerator
 
                                    public System.Type AssociatedType => typeof({{typeAlias}});
                                    public uint TypeId => (uint)KnownTypeId;
+                                   public bool ReferenceTracking => false;
                                    public global::Fory.Core.Spec.DataType.TypeSpecificationRegistry.KnownTypes KnownTypeId => global::Fory.Core.Spec.DataType.TypeSpecificationRegistry.KnownTypes.{{generationInfo.Value.EnumName}};
                                    global::Fory.Core.Serializer.IForySerializer global::Fory.Core.Spec.DataType.ITypeSpecification.Serializer => Serializer;
                                    public global::Fory.Core.Serializer.IForySerializer<{{typeAlias}}> Serializer => _serializer.Value;

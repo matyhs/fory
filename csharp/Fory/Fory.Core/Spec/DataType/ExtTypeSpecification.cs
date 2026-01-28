@@ -47,6 +47,7 @@ internal class ExtTypeSpecification<TSerializer> : IExtTypeSpecification
     public Type SerializerType => typeof(TSerializer);
     public Type AssociatedType => _serializer.Value.AssociatedType;
     public uint TypeId { get; }
+    public bool ReferenceTracking => true;
     public bool IsRegisteredByName { get; }
     public bool IsNamespaceIncluded { get; }
     public IForySerializer Serializer => _serializer.Value;

@@ -31,6 +31,8 @@ internal interface ITypeSpecification
 
     uint TypeId { get; }
 
+    bool ReferenceTracking { get; }
+
     IForySerializer Serializer { get; }
 }
 

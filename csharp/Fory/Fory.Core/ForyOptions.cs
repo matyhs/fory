@@ -25,7 +25,15 @@ public class ForyOptions
 
     public bool Compatible { get; set; }
 
+    /// <summary>
+    /// true when serialization uses Fory xlang format
+    /// </summary>
     public bool Xlang { get; set; }
+
+    /// <summary>
+    /// true when full reference tracking is enabled for the root object
+    /// </summary>
+    public bool TrackReference { get; set; }
 
     public bool CompressString { get; set; }
 

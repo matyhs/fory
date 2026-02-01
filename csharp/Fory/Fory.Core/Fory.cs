@@ -25,6 +25,7 @@ using Fory.Core.Extensions;
 using Fory.Core.Serializer;
 using Fory.Core.Spec.DataType;
 using Fory.Core.Spec.DataType.Extensions;
+using Fory.Core.Spec.Ref;
 
 namespace Fory.Core;
 
@@ -61,12 +62,8 @@ public class Fory
         await typeSpec.Serializer.SerializeHeaderInfoAsync(value, context, cancellationToken).ConfigureAwait(false);
         if (value is not null)
         {
-            await typeSpec.Serializer.SerializeRefInfoAsync(value, context, cancellationToken)
-                .ConfigureAwait(false);
-            await typeSpec.Serializer.SerializeTypeInfoAsync(value, context, cancellationToken)
-                .ConfigureAwait(false);
-            await typeSpec.Serializer.SerializeDataAsync(value, context, cancellationToken).ConfigureAwait(false);
-            await typeSpec.Serializer.SerializeTypeMetaInfoAsync(value, context, cancellationToken)
+            var refMode = _options.TrackReference ? RefMode.Tracking : RefMode.NullOnly;
+            await typeSpec.Serializer.SerializeContentAsync(value, context, refMode, true, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -85,25 +82,8 @@ public class Fory
         if (headerInfo.IsHeaderValidOrThrow(context) && headerInfo.IsNull)
             return default;
 
-        // TODO: load type meta info
-        await typeSpec.Serializer.DeserializeTypeMetaInfoAsync<TValue>(context, cancellationToken);
-
-        var referenceInfo = await typeSpec.Serializer.DeserializeRefInfoAsync<TValue>(context, cancellationToken)
+        var refMode = _options.TrackReference ? RefMode.Tracking : RefMode.NullOnly;
+        return await typeSpec.Serializer.DeserializeContentAsync<TValue>(context, refMode, true, cancellationToken)
             .ConfigureAwait(false);
-        if (referenceInfo.IsNull)
-            return default;
-
-        var typeInfo = await typeSpec.Serializer.DeserializeTypeInfoAsync<TValue>(context, cancellationToken)
-            .ConfigureAwait(false);
-        var stronglyTypedSerializer = typeInfo.GetTypedSerializer();
-        if (stronglyTypedSerializer is not null)
-            return await stronglyTypedSerializer.DeserializeDataAsync(context, cancellationToken)
-                .ConfigureAwait(false);
-
-        var value = await typeInfo.Serializer.DeserializeDataAsync<TValue>(context, cancellationToken);
-        if (value is null)
-            return default;
-
-        return (TValue)value;
     }
 }

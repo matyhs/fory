@@ -57,84 +57,13 @@ public sealed class SerializationContext
     internal TypeMetaRegistry TypeMetaRegistry { get; private set; }
     internal TypeMetaStringRegistry TypeMetaStringRegistry { get; private set; }
 
-    internal void InitializeStartMetaOffset()
-    {
-        if (!_options.Compatible) return;
-
-        _startMetaOffset = (int) _pipe.Writer.UnflushedBytes;
-
-        var placeholder = -1;
-        var span = _pipe.Writer.GetSpan(sizeof(int));
-        MemoryMarshal.Write(span, ref placeholder);
-        _pipe.Writer.Advance(sizeof(int));
-    }
-
-    internal async Task CalculateMetaOffsetAsync(CancellationToken cancellationToken = default)
-    {
-        // TODO: Validate that type meta registry also has entries
-        if (!_options.Compatible || !TypeMetaRegistry.HasEntry()) return;
-
-        var readResult = await _pipe.Reader.ReadAsync(cancellationToken);
-        // total written bytes - header bytes - placeholder meta offset bytes
-        _metaOffset = (int)(readResult.Buffer.Length - _startMetaOffset - sizeof(int));
-    }
-
     internal async ValueTask<ReadOnlySequence<byte>> CompleteAsync(CancellationToken cancellationToken = default)
     {
         await Writer.CompleteAsync().ConfigureAwait(false);
         if (!_pipe.Reader.TryRead(out var readResult))
             throw new SerializationException("Error occurred while accessing buffer data");
 
-        if (!_options.Compatible)
-            return readResult.Buffer;
-
-        // Note: the buffer is immutable after writing via PipeWriter.
-        var headerSequence = readResult.Buffer.Slice(0, _startMetaOffset);
-        var metaOffsetMemory = BitConverter.GetBytes(_metaOffset).AsMemory();
-        var remainingSequence = readResult.Buffer.Slice(_startMetaOffset + sizeof(int));
-
-        var firstSegment = new ZeroCopyByteSegment(headerSequence.First);
-        var lastSegment = firstSegment;
-
-        var remainingHeader = headerSequence.Slice(headerSequence.First.Length);
-        if (!remainingHeader.IsEmpty)
-        {
-            foreach (var memory in remainingHeader)
-            {
-                lastSegment = lastSegment.Append(memory);
-            }
-        }
-
-        lastSegment = lastSegment.Append(metaOffsetMemory);
-
-        if (!remainingSequence.IsEmpty)
-        {
-            foreach (var memory in remainingSequence)
-            {
-                lastSegment = lastSegment.Append(memory);
-            }
-        }
-
-        return new ReadOnlySequence<byte>(firstSegment, 0, lastSegment, lastSegment.Memory.Length);
-    }
-
-    private class ZeroCopyByteSegment : ReadOnlySequenceSegment<byte>
-    {
-        public ZeroCopyByteSegment(ReadOnlyMemory<byte> memory)
-        {
-            Memory = memory;
-        }
-
-        public ZeroCopyByteSegment Append(ReadOnlyMemory<byte> memory)
-        {
-            var next = new ZeroCopyByteSegment(memory)
-            {
-                RunningIndex = RunningIndex + Memory.Length
-            };
-
-            Next = next;
-            return next;
-        }
+        return readResult.Buffer;
     }
 }
 

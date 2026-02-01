@@ -39,6 +39,8 @@ internal static class ForyRefMetaSpec
 
 public readonly struct ReferenceInfo
 {
+    public static readonly ReferenceInfo NotNull = new(ForyRefMetaSpec.ReferenceFlag.NotNull);
+
     private readonly ForyRefMetaSpec.ReferenceFlag _bitmap;
 
     public bool IsNull => _bitmap == ForyRefMetaSpec.ReferenceFlag.Null;

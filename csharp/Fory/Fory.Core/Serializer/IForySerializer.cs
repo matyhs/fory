@@ -18,7 +18,6 @@
  */
 
 using System;
-using System.Buffers;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -28,6 +27,7 @@ using Fory.Core.Encoding;
 using Fory.Core.Spec;
 using Fory.Core.Spec.DataType;
 using Fory.Core.Spec.DataType.Extensions;
+using Fory.Core.Spec.Ref;
 
 namespace Fory.Core.Serializer;
 
@@ -42,26 +42,16 @@ public abstract class ForySerializerBase : IForySerializer
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    ///     Fory header specification: | magic number | reserved bits |  oob  | xlang | endian | null  |  language  | unsigned
-    ///     int for meta start offset |
+    ///     Fory header specification: | reserved bits |  oob  | xlang  | null  |  language
     /// </summary>
     public async Task SerializeHeaderInfoAsync<TValue>(TValue value, SerializationContext context,
         CancellationToken cancellationToken = default)
     {
-        var flag = ForyHeaderSpec.ForyConfigFlags.IsLittleEdian;
+        var flag = ForyHeaderSpec.ForyConfigFlags.None;
         flag |= value is null ? ForyHeaderSpec.ForyConfigFlags.IsNull : flag;
         flag |= context.IsXlang ? ForyHeaderSpec.ForyConfigFlags.IsXlang : flag;
 
-        var span = context.Writer.GetSpan(sizeof(ushort));
-        if (context.IsXlang)
-        {
-            var magicNumber = ForyHeaderSpec.MagicNumber;
-            MemoryMarshal.Write(span, ref magicNumber);
-        }
-
-        context.Writer.Advance(sizeof(ushort));
-
-        span = context.Writer.GetSpan(sizeof(byte));
+        var span = context.Writer.GetSpan(sizeof(byte));
         MemoryMarshal.Write(span, ref flag);
         context.Writer.Advance(sizeof(byte));
 
@@ -73,19 +63,29 @@ public abstract class ForySerializerBase : IForySerializer
             context.Writer.Advance(sizeof(byte));
         }
 
-        context.InitializeStartMetaOffset();
         await context.Writer.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task SerializeRefInfoAsync<TValue>(TValue value, SerializationContext context,
+    public async Task SerializeContentAsync<TValue>(TValue value, SerializationContext context, RefMode refMode,
+        bool writeTypeInfo, CancellationToken cancellationToken = default)
+    {
+        await SerializeRefInfoAsync(value, context, refMode, cancellationToken).ConfigureAwait(false);
+        if (writeTypeInfo)
+            await SerializeTypeInfoAsync(value, context, cancellationToken).ConfigureAwait(false);
+
+        await SerializeDataAsync(value, context, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task SerializeRefInfoAsync<TValue>(TValue value, SerializationContext context, RefMode refMode,
         CancellationToken cancellationToken = default)
     {
-        var refFlag =
-            (byte)(value is null ? ForyRefMetaSpec.ReferenceFlag.Null : ForyRefMetaSpec.ReferenceFlag.NotNull);
+        if (refMode == RefMode.None)
+            return;
 
-        var span = context.Writer.GetSpan(sizeof(byte));
+        var refFlag = ForyRefMetaSpec.ReferenceFlag.NotNull;
+        var span = context.Writer.GetSpan(sizeof(sbyte));
         MemoryMarshal.Write(span, ref refFlag);
-        context.Writer.Advance(sizeof(byte));
+        context.Writer.Advance(sizeof(sbyte));
 
         await context.Writer.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
@@ -190,21 +190,9 @@ public abstract class ForySerializerBase : IForySerializer
         }
     }
 
-    public async Task SerializeTypeMetaInfoAsync<TValue>(TValue value, SerializationContext context,
-        CancellationToken cancellationToken = default)
-    {
-        await context.CalculateMetaOffsetAsync(cancellationToken);
-        // TODO: write type meta info for schema evolution
-    }
-
     public async ValueTask<HeaderInfo> DeserializeHeaderInfoAsync<TValue>(DeserializationContext context,
         CancellationToken cancellationToken = default)
     {
-        var validMagicNumber = await ValidateMagicNumber(context, cancellationToken).ConfigureAwait(false);
-        if (!validMagicNumber)
-            throw new SerializationException(
-                $"Fory xlang serialization must start with magic number {ForyHeaderSpec.MagicNumber}.");
-
         var readResult = await context.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
         var sequence = readResult.Buffer.Slice(0, sizeof(byte));
         var bitmap = MemoryMarshal.Read<ForyHeaderSpec.ForyConfigFlags>(sequence.First.Span);
@@ -221,33 +209,35 @@ public abstract class ForySerializerBase : IForySerializer
         }
 
         return new HeaderInfo(bitmap);
+    }
 
-        static async ValueTask<bool> ValidateMagicNumber(DeserializationContext context,
-            CancellationToken cancellationToken)
-        {
-            if (!context.IsXlang)
-                return true;
+    public async ValueTask<TValue?> DeserializeContentAsync<TValue>(DeserializationContext context, RefMode refMode,
+        bool readTypeInfo, CancellationToken cancellationToken = default)
+    {
+        var referenceInfo = await DeserializeRefInfoAsync<TValue>(context, refMode, cancellationToken)
+            .ConfigureAwait(false);
+        if (referenceInfo.IsNull)
+            return default;
 
-            var readResult = await context.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-            var sequence = readResult.Buffer.Slice(0, sizeof(ushort));
+        TypeInfo<TValue>? typeInfo = null;
+        if (readTypeInfo)
+            typeInfo = await DeserializeTypeInfoAsync<TValue>(context, cancellationToken).ConfigureAwait(false);
 
-            var pool = ArrayPool<byte>.Shared;
-            var buffer = pool.Rent(sizeof(ushort));
-            foreach (var seq in sequence) seq.Span.CopyTo(buffer);
-
-            var magicNumber = MemoryMarshal.Read<ushort>(buffer.AsSpan(0, sizeof(ushort)));
-            pool.Return(buffer);
-            context.Reader.AdvanceTo(sequence.End);
-
-            return magicNumber == ForyHeaderSpec.MagicNumber;
-        }
+        var serializer = typeInfo?.GetTypedSerializer();
+        var value = serializer is not null
+            ? await serializer.DeserializeDataAsync<TValue>(context, cancellationToken).ConfigureAwait(false)
+            : await DeserializeDataAsync<TValue>(context, cancellationToken).ConfigureAwait(false);
+        return value is null ? default : (TValue)value;
     }
 
     public async ValueTask<ReferenceInfo> DeserializeRefInfoAsync<TValue>(DeserializationContext context,
-        CancellationToken cancellationToken = default)
+        RefMode refMode, CancellationToken cancellationToken = default)
     {
+        if (refMode == RefMode.None)
+            return ReferenceInfo.NotNull;
+
         var readResult = await context.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-        var sequence = readResult.Buffer.Slice(0, sizeof(byte));
+        var sequence = readResult.Buffer.Slice(0, sizeof(sbyte));
         var bitmap = MemoryMarshal.Read<ForyRefMetaSpec.ReferenceFlag>(sequence.First.Span);
         context.Reader.AdvanceTo(sequence.End);
 
@@ -274,19 +264,6 @@ public abstract class ForySerializerBase : IForySerializer
 
         context.TypeSpecificationRegistry.TryGetTypeSpecification(foryTypeId, out var typeSpec);
         return new TypeInfo<TValue>(typeSpec);
-    }
-
-    public async ValueTask DeserializeTypeMetaInfoAsync<TValue>(DeserializationContext context,
-        CancellationToken cancellationToken = default)
-    {
-        if (!context.IsCompatible) return;
-
-        var readResult = await context.Reader.ReadAsync(cancellationToken);
-        var sequence = readResult.Buffer.Slice(0, sizeof(int));
-        var metaOffset = MemoryMarshal.Read<int>(sequence.First.Span);
-        context.Reader.AdvanceTo(sequence.End);
-
-        // TODO: load type meta info for schema evolution
     }
 
     private static TypeSpecificationRegistry.KnownTypes ExtractKnownType(uint typeId)
@@ -344,7 +321,10 @@ public interface IForySerializer
     Task SerializeHeaderInfoAsync<TValue>(TValue value, SerializationContext context,
         CancellationToken cancellationToken = default);
 
-    Task SerializeRefInfoAsync<TValue>(TValue value, SerializationContext context,
+    Task SerializeContentAsync<TValue>(TValue value, SerializationContext context, RefMode refMode, bool writeTypeInfo,
+        CancellationToken cancellationToken = default);
+
+    Task SerializeRefInfoAsync<TValue>(TValue value, SerializationContext context, RefMode refMode,
         CancellationToken cancellationToken = default);
 
     Task SerializeTypeInfoAsync<TValue>(TValue value, SerializationContext context,
@@ -353,21 +333,18 @@ public interface IForySerializer
     Task SerializeDataAsync<TValue>(TValue value, SerializationContext context,
         CancellationToken cancellationToken = default);
 
-    Task SerializeTypeMetaInfoAsync<TValue>(TValue value, SerializationContext context,
-        CancellationToken cancellationToken = default);
-
     ValueTask<HeaderInfo> DeserializeHeaderInfoAsync<TValue>(DeserializationContext context,
         CancellationToken cancellationToken = default);
 
-    ValueTask<ReferenceInfo> DeserializeRefInfoAsync<TValue>(DeserializationContext context,
+    ValueTask<TValue?> DeserializeContentAsync<TValue>(DeserializationContext context, RefMode refMode,
+        bool readTypeInfo, CancellationToken cancellationToken = default);
+
+    ValueTask<ReferenceInfo> DeserializeRefInfoAsync<TValue>(DeserializationContext context, RefMode refMode,
         CancellationToken cancellationToken = default);
 
     ValueTask<TypeInfo<TValue>> DeserializeTypeInfoAsync<TValue>(DeserializationContext context,
         CancellationToken cancellationToken = default);
 
     ValueTask<object?> DeserializeDataAsync<TValue>(DeserializationContext context,
-        CancellationToken cancellationToken = default);
-
-    ValueTask DeserializeTypeMetaInfoAsync<TValue>(DeserializationContext context,
         CancellationToken cancellationToken = default);
 }

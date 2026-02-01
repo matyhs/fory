@@ -30,9 +30,6 @@ internal static class HeaderInfoExtensions
             throw new SerializationException(
                 "Mismatch found in header bitmap between xlang bit and current Fory configuration.");
 
-        if (!headerInfo.IsPeerLittleEdian)
-            throw new SerializationException("Big endian is currently not supported");
-
         return true;
     }
 }

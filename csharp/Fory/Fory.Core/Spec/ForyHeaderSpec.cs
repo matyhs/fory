@@ -26,13 +26,12 @@ internal class ForyHeaderSpec
     [Flags]
     public enum ForyConfigFlags : byte
     {
+        None = 0,
         IsNull = 1,
-        IsLittleEdian = 1 << 1,
-        IsXlang = 1 << 2,
-        IsOob = 1 << 3
+        IsXlang = 1 << 1,
+        IsOob = 1 << 2
     }
 
-    public const ushort MagicNumber = 0x62d4;
     public const byte LanguageCode = 0x8;
 }
 
@@ -53,8 +52,6 @@ public readonly record struct HeaderInfo
     public byte? SourceLanguageCode { get; }
 
     public bool IsPeerXlang => _bitmap.HasFlag(ForyHeaderSpec.ForyConfigFlags.IsXlang);
-
-    public bool IsPeerLittleEdian => _bitmap.HasFlag(ForyHeaderSpec.ForyConfigFlags.IsLittleEdian);
 
     public bool IsNull => _bitmap.HasFlag(ForyHeaderSpec.ForyConfigFlags.IsNull);
 }

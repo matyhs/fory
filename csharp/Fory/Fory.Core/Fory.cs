@@ -19,6 +19,8 @@
 
 using System;
 using System.Buffers;
+using System.IO;
+using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Fory.Core.Extensions;
@@ -31,8 +33,19 @@ namespace Fory.Core;
 
 public class Fory
 {
+    private static readonly TypeSpecificationRegistry TypeSpecificationRegistry = new();
+
+    private static readonly ThreadLocal<ContextCache<SerializationContext>> LocalSerializationContext =
+        new(() => new ContextCache<SerializationContext>());
+
+    private static readonly ThreadLocal<ContextCache<DeserializationContext>> LocalDeserializationContext =
+        new(() => new ContextCache<DeserializationContext>());
+
+    private static long _instanceCount = 0;
+
+    private readonly long _instanceId;
+    private readonly Lazy<TypeSpecificationRegistry> _finalRegistry = new(() => TypeSpecificationRegistry.DeepClone());
     private readonly ForyOptions _options;
-    private readonly TypeSpecificationRegistry _typeSpecificationRegistry = new();
 
     public Fory() : this(ForyOptions.Default)
     {
@@ -41,6 +54,7 @@ public class Fory
     public Fory(ForyOptions options)
     {
         _options = options;
+        _instanceId = Interlocked.Increment(ref _instanceCount);
     }
 
     public bool Register<TObject>()
@@ -53,12 +67,17 @@ public class Fory
         throw new NotImplementedException();
     }
 
-    public async ValueTask<ReadOnlySequence<byte>> SerializeAsync<TValue>(TValue value,
+    public async ValueTask<Stream> SerializeAsync<TValue>(TValue value,
         CancellationToken cancellationToken = default)
     {
-        var context = new SerializationContext(_options, _typeSpecificationRegistry);
-        var typeSpec = _typeSpecificationRegistry.GetTypeSpecification(typeof(TValue));
+        var context = LocalSerializationContext.Value?.GetOrCreate(_instanceId,
+            () => new SerializationContext(_options, TypeSpecificationRegistry.DeepClone()));
+        if (context is null)
+            throw new SerializationException("Error occured while creating serialization context");
 
+        context.Initialize();
+
+        var typeSpec = TypeSpecificationRegistry.GetTypeSpecification(typeof(TValue));
         await typeSpec.Serializer.SerializeHeaderInfoAsync(value, context, cancellationToken).ConfigureAwait(false);
         if (value is not null)
         {
@@ -70,13 +89,40 @@ public class Fory
         return await context.CompleteAsync(cancellationToken);
     }
 
-    public async ValueTask<TValue?> DeserializeAsync<TValue>(ReadOnlySequence<byte> buffer,
+    public async Task SerializeAsync<TValue>(TValue value, Stream stream,
         CancellationToken cancellationToken = default)
     {
-        var context = new DeserializationContext(_options, _typeSpecificationRegistry);
-        context.Initialize(buffer);
+        var context = LocalSerializationContext.Value?.GetOrCreate(_instanceId,
+            () => new SerializationContext(_options, TypeSpecificationRegistry.DeepClone()));
+        if (context is null)
+            throw new SerializationException("Error occured while creating serialization context");
 
-        var typeSpec = _typeSpecificationRegistry.GetTypeSpecification(typeof(TValue));
+        context.Initialize(stream);
+
+        var typeSpec = TypeSpecificationRegistry.GetTypeSpecification(typeof(TValue));
+        await typeSpec.Serializer.SerializeHeaderInfoAsync(value, context, cancellationToken).ConfigureAwait(false);
+        if (value is not null)
+        {
+            var refMode = _options.TrackReference ? RefMode.Tracking : RefMode.NullOnly;
+            await typeSpec.Serializer.SerializeContentAsync(value, context, refMode, true, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        await context.Writer.CompleteAsync().ConfigureAwait(false);
+    }
+
+    public async ValueTask<TValue?> DeserializeAsync<TValue>(Stream stream,
+        CancellationToken cancellationToken = default)
+    {
+        using IDisposable _ = stream;
+        var context = LocalDeserializationContext.Value?.GetOrCreate(_instanceId,
+            () => new DeserializationContext(_options, TypeSpecificationRegistry.DeepClone()));
+        if (context is null)
+            throw new SerializationException("Error occured while creating deserialization context");
+
+        context.Initialize(stream);
+
+        var typeSpec = TypeSpecificationRegistry.GetTypeSpecification(typeof(TValue));
         var headerInfo = await typeSpec.Serializer.DeserializeHeaderInfoAsync<TValue>(context, cancellationToken)
             .ConfigureAwait(false);
         if (headerInfo.IsHeaderValidOrThrow(context) && headerInfo.IsNull)

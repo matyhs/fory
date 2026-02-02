@@ -17,11 +17,8 @@
  * under the License.
  */
 
-using System;
-using System.Buffers;
+using System.IO;
 using System.IO.Pipelines;
-using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Fory.Core.Spec.DataType;
@@ -34,8 +31,7 @@ public sealed class SerializationContext
     private readonly ForyOptions _options;
     private readonly Pipe _pipe;
 
-    private int _startMetaOffset = -1;
-    private int _metaOffset = -1;
+    private PipeWriter? _writer;
 
     internal SerializationContext(ForyOptions options, TypeSpecificationRegistry typeSpecificationRegistry)
     {
@@ -47,7 +43,7 @@ public sealed class SerializationContext
         TypeSpecificationRegistry = typeSpecificationRegistry;
     }
 
-    public PipeWriter Writer => _pipe.Writer;
+    public PipeWriter Writer => _writer ?? _pipe.Writer;
 
     public bool IsXlang => _options.Xlang;
 
@@ -57,45 +53,19 @@ public sealed class SerializationContext
     internal TypeMetaRegistry TypeMetaRegistry { get; private set; }
     internal TypeMetaStringRegistry TypeMetaStringRegistry { get; private set; }
 
-    internal async ValueTask<ReadOnlySequence<byte>> CompleteAsync(CancellationToken cancellationToken = default)
+    internal void Initialize()
+    {
+        _writer = null;
+    }
+
+    internal void Initialize(Stream stream)
+    {
+        _writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
+    }
+
+    internal async ValueTask<Stream> CompleteAsync(CancellationToken cancellationToken = default)
     {
         await Writer.CompleteAsync().ConfigureAwait(false);
-        if (!_pipe.Reader.TryRead(out var readResult))
-            throw new SerializationException("Error occurred while accessing buffer data");
-
-        return readResult.Buffer;
-    }
-}
-
-public sealed class DeserializationContext
-{
-    private readonly ForyOptions _options;
-    private readonly Pipe _pipe;
-
-    internal DeserializationContext(ForyOptions options, TypeSpecificationRegistry typeSpecificationRegistry)
-    {
-        _pipe = new Pipe();
-
-        _options = options;
-        TypeSpecificationRegistry = typeSpecificationRegistry;
-    }
-
-    public PipeReader Reader => _pipe.Reader;
-
-    public bool IsXlang => _options.Xlang;
-
-    public bool IsCompatible => _options.Compatible;
-
-    internal TypeSpecificationRegistry TypeSpecificationRegistry { get; private set; }
-
-    internal void Initialize(ReadOnlySequence<byte> buffer)
-    {
-        if (buffer.IsSingleSegment)
-            _pipe.Writer.Write(buffer.First.Span);
-        else
-            foreach (var segment in buffer)
-                _pipe.Writer.Write(segment.Span);
-
-        _pipe.Writer.Complete();
+        return _pipe.Reader.AsStream();
     }
 }

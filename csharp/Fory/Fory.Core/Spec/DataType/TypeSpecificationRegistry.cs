@@ -269,11 +269,8 @@ internal class TypeSpecificationRegistry
     private readonly Dictionary<Type, ITypeSpecification> _registryByType;
     private readonly Dictionary<uint, ITypeSpecification> _registryByTypeId;
 
-    internal TypeSpecificationRegistry()
+    internal TypeSpecificationRegistry() : this(new(), new())
     {
-        _registryByType = new Dictionary<Type, ITypeSpecification>();
-        _registryByTypeId = new Dictionary<uint, ITypeSpecification>();
-
         RegisterInternal<BooleanTypeSpecification>();
         RegisterInternal<Int8TypeSpecification>();
         RegisterInternal<Int16TypeSpecification>();
@@ -292,6 +289,13 @@ internal class TypeSpecificationRegistry
         RegisterInternal<DurationTypeSpecification>();
         RegisterInternal<TimestampTypeSpecification>();
         RegisterInternal<LocalDateTypeSpecification>();
+    }
+
+    private TypeSpecificationRegistry(Dictionary<Type, ITypeSpecification> registryByType,
+        Dictionary<uint, ITypeSpecification> registryByTypeId)
+    {
+        _registryByType = new(registryByType);
+        _registryByTypeId = new(registryByTypeId);
     }
 
     public ITypeSpecification this[Type type] => _registryByType[type];
@@ -316,6 +320,11 @@ internal class TypeSpecificationRegistry
     {
         var typeSpec = Factory.Create<TObject>(includeNamespace);
         RegisterInternal(typeSpec);
+    }
+
+    public TypeSpecificationRegistry DeepClone()
+    {
+        return new TypeSpecificationRegistry(_registryByType, _registryByTypeId);
     }
 
     private void RegisterInternal<TTypeSpec>() where TTypeSpec : IKnownTypeSpecification, new()
